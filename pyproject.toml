@@ -1,0 +1,15 @@
+[build-system]
+requires=["hatchling"]
+build-backend="hatchling.build"
+
+[project]
+name="musicscope"
+version="0.1.0"
+requires-python=">=3.12"
+dependencies=[]
+
+[project.scripts]
+musicscope="musicscope.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages=["src/musicscope"]

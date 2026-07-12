@@ -1,0 +1,3 @@
+# MusicScope
+
+First bootstrap version.
