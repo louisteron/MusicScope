@@ -5,11 +5,33 @@ build-backend="hatchling.build"
 [project]
 name="musicscope"
 version="0.1.0"
-requires-python=">=3.12"
-dependencies=[]
+description="An audio-reactive OpenGL visualiser for Raspberry Pi."
+readme="README.md"
+requires-python=">=3.13"
+dependencies=[
+    "glfw>=2.8.0",
+    "moderngl>=5.12.0",
+    "numpy>=2.1.0",
+    "Pillow>=11.0.0",
+    "sounddevice>=0.5.0",
+]
+
+[project.optional-dependencies]
+dev=["pytest>=8.3.0", "ruff>=0.8.0"]
 
 [project.scripts]
 musicscope="musicscope.__main__:main"
 
 [tool.hatch.build.targets.wheel]
 packages=["src/musicscope"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

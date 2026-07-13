@@ -1,1 +1,3 @@
-__version__='0.1.0'
+"""MusicScope, an audio-reactive OpenGL visualiser."""
+
+__version__ = "0.1.0"
