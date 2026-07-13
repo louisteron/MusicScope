@@ -1,5 +1,7 @@
 """A narrow GLFW wrapper with no rendering responsibilities."""
 
+from collections import deque
+
 import glfw
 
 
@@ -12,6 +14,7 @@ class GlfwWindow:
         self._height = height
         self._fullscreen = fullscreen
         self._window: glfw._GLFWwindow | None = None
+        self._pressed_keys: deque[int] = deque()
 
     def open(self) -> None:
         """Initialize GLFW and create the native window."""
@@ -27,6 +30,7 @@ class GlfwWindow:
             raise RuntimeError("GLFW could not create an OpenGL window.")
         glfw.make_context_current(self._window)
         glfw.swap_interval(1)
+        glfw.set_key_callback(self._window, self._on_key)
 
     @property
     def should_close(self) -> bool:
@@ -44,6 +48,12 @@ class GlfwWindow:
         """Process pending window-system events."""
         glfw.poll_events()
 
+    def consume_pressed_keys(self) -> tuple[int, ...]:
+        """Return and clear keyboard presses accumulated since the last frame."""
+        keys = tuple(self._pressed_keys)
+        self._pressed_keys.clear()
+        return keys
+
     def present(self) -> None:
         """Swap front and back buffers."""
         if self._window is None:
@@ -56,3 +66,14 @@ class GlfwWindow:
             glfw.destroy_window(self._window)
             self._window = None
         glfw.terminate()
+
+    def _on_key(
+        self,
+        _window: glfw._GLFWwindow,
+        key: int,
+        _scancode: int,
+        action: int,
+        _modifiers: int,
+    ) -> None:
+        if action == glfw.PRESS:
+            self._pressed_keys.append(key)

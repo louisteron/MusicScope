@@ -1,6 +1,9 @@
 # Python
+.env
 __pycache__/
+**pycache**/
 *.py[cod]
+*.pyc
 *$py.class
 
 # Virtual environment

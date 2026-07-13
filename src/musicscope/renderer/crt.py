@@ -1,0 +1,78 @@
+"""CRT phosphor grid rendered as a fullscreen ModernGL pass."""
+
+from array import array
+
+import moderngl
+
+
+class CrtRenderer:
+    """Draw a scan-lined oscilloscope background with a subtle grid."""
+
+    _VERTEX_SHADER = """
+        #version 330
+        in vec2 in_position;
+        out vec2 position;
+        void main() {
+            position = in_position;
+            gl_Position = vec4(in_position, 0.0, 1.0);
+        }
+    """
+    _FRAGMENT_SHADER = """
+        #version 330
+        in vec2 position;
+        uniform float u_energy;
+        uniform float u_time;
+        out vec4 fragment_color;
+
+        float grid_line(float coordinate, float width) {
+            float distance_to_line = abs(fract(coordinate) - 0.5);
+            return smoothstep(0.5 - width, 0.5, distance_to_line);
+        }
+
+        void main() {
+            vec2 curved = position * (1.0 + 0.045 * dot(position, position));
+            vec2 scope_uv = curved * 0.5 + 0.5;
+            vec2 divisions = vec2(12.0, 8.0);
+            vec2 grid_position = scope_uv * divisions;
+
+            float vertical = grid_line(grid_position.x, 0.030);
+            float horizontal = grid_line(grid_position.y, 0.030);
+            float vertical_dots = step(0.52, fract(grid_position.y * 5.0));
+            float horizontal_dots = step(0.52, fract(grid_position.x * 5.0));
+            float dotted_grid = max(vertical * vertical_dots, horizontal * horizontal_dots);
+
+            float vertical_axis = 1.0 - smoothstep(0.0, 0.004, abs(curved.x));
+            float horizontal_axis = 1.0 - smoothstep(0.0, 0.004, abs(curved.y));
+            float vertical_ticks = step(0.36, fract(scope_uv.y * 72.0));
+            float horizontal_ticks = step(0.36, fract(scope_uv.x * 72.0));
+            float axis = max(vertical_axis * vertical_ticks, horizontal_axis * horizontal_ticks);
+
+            float horizontal_edge = min(scope_uv.x, 1.0 - scope_uv.x);
+            float vertical_edge = min(scope_uv.y, 1.0 - scope_uv.y);
+            float edge_distance = min(horizontal_edge, vertical_edge);
+            float border = 1.0 - smoothstep(0.002, 0.008, edge_distance);
+            float grid_line_intensity = max(dotted_grid * 0.78, max(axis * 1.00, border * 1.00));
+            float scan = 0.86 + 0.14 * sin(gl_FragCoord.y * 3.14159);
+            float noiseSeed = dot(gl_FragCoord.xy + u_time, vec2(12.9898, 78.233));
+            float noise = fract(sin(noiseSeed) * 43758.5453);
+            float vignette = max(0.24, 1.0 - 0.48 * dot(position, position));
+            vec3 base = vec3(0.0004, 0.006, 0.0018);
+            vec3 phosphor = vec3(0.012, 0.34, 0.105) * (grid_line_intensity + u_energy * 0.06);
+            fragment_color = vec4(((base + phosphor) * scan + noise * 0.003) * vignette, 1.0);
+        }
+    """
+
+    def __init__(self, context: moderngl.Context) -> None:
+        self._program = context.program(
+            vertex_shader=self._VERTEX_SHADER,
+            fragment_shader=self._FRAGMENT_SHADER,
+        )
+        positions = array("f", (-1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0))
+        vertices = context.buffer(data=positions.tobytes())
+        self._vertex_array = context.vertex_array(self._program, [(vertices, "2f", "in_position")])
+
+    def render(self, energy: float, elapsed: float) -> None:
+        """Draw the background before all phosphor traces."""
+        self._program["u_energy"].value = energy
+        self._program["u_time"].value = elapsed
+        self._vertex_array.render(mode=moderngl.TRIANGLE_STRIP)

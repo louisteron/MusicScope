@@ -13,6 +13,7 @@ dependencies=[
     "moderngl>=5.12.0",
     "numpy>=2.1.0",
     "Pillow>=11.0.0",
+    "python-dotenv>=1.0.1",
     "sounddevice>=0.5.0",
 ]
 
@@ -24,6 +25,13 @@ musicscope="musicscope.__main__:main"
 
 [tool.hatch.build.targets.wheel]
 packages=["src/musicscope"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/musicscope/assets/frog.jpg" = "musicscope/assets/frog.jpg"
+"src/musicscope/assets/logo-jvb.png" = "musicscope/assets/logo-jvb.png"
+"src/musicscope/assets/logo-ram.png" = "musicscope/assets/logo-ram.png"
+"src/musicscope/assets/disc-cd.png" = "musicscope/assets/disc-cd.png"
+"src/musicscope/assets/disc-vinyl.png" = "musicscope/assets/disc-vinyl.png"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

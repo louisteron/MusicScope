@@ -9,3 +9,7 @@ class VisualState:
 
     energy: float = 0.0
     spectrum: tuple[float, ...] = ()
+    waveform: tuple[float, ...] = ()
+    track_title: str | None = None
+    artist_name: str | None = None
+    artwork_path: str | None = None

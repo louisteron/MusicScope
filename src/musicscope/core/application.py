@@ -2,11 +2,15 @@
 
 import argparse
 import logging
+import time
 
-from musicscope.audio import AudioAnalyzer, AudioInput
-from musicscope.config import AppSettings
+import glfw
+
+from musicscope.audio import AudioAnalyzer, AudioInput, SystemAudioDeviceSelector
+from musicscope.config import LOGO_NAMES, AppSettings
+from musicscope.core.logo_selector import LogoSelector
 from musicscope.graphics import create_context
-from musicscope.renderer import BackgroundRenderer, SpectrumRenderer
+from musicscope.renderer import ArtworkRenderer, CrtRenderer, OscilloscopeRenderer
 from musicscope.scene import SceneManager
 from musicscope.utils.logging import configure_logging
 from musicscope.window import GlfwWindow
@@ -32,28 +36,62 @@ class MusicScopeApp:
         try:
             window.open()
             context = create_context()
-            background_renderer = BackgroundRenderer(context)
-            spectrum_renderer = SpectrumRenderer(context)
+            crt_renderer = CrtRenderer(context)
+            oscilloscope_renderer = OscilloscopeRenderer(context)
+            artwork_renderer = ArtworkRenderer(context, logo=self._settings.logo)
+            logo_selector = LogoSelector(LOGO_NAMES, self._settings.logo)
+            started_at = time.monotonic()
             if self._settings.enable_audio:
-                audio_input = AudioInput(
-                    analyzer=AudioAnalyzer(),
-                    on_frame=self._scene_manager.update_audio,
-                    sample_rate=self._settings.sample_rate,
-                    block_size=self._settings.block_size,
-                    logger=self._logger,
-                )
-                audio_input.start()
+                device = SystemAudioDeviceSelector().select(self._settings.audio_device)
+                if device is None:
+                    self._logger.warning(
+                        "No system-audio loopback device found; microphone capture is disabled."
+                    )
+                else:
+                    self._logger.info("Capturing system audio from: %s", device.name)
+                    audio_input = AudioInput(
+                        analyzer=AudioAnalyzer(),
+                        on_frame=self._scene_manager.update_audio,
+                        sample_rate=device.sample_rate,
+                        block_size=self._settings.block_size,
+                        device=device.name,
+                        channels=device.channels,
+                        logger=self._logger,
+                    )
+                    audio_input.start()
             self._logger.info("MusicScope started. Close the window to quit.")
             while not window.should_close:
-                state = self._scene_manager.state
-                background_renderer.render(state, window.framebuffer_size)
-                spectrum_renderer.render(state)
-                window.present()
                 window.poll_events()
+                self._handle_visual_shortcuts(window, logo_selector, artwork_renderer)
+                state = self._scene_manager.state
+                width, height = window.framebuffer_size
+                context.viewport = (0, 0, width, height)
+                elapsed = time.monotonic() - started_at
+                crt_renderer.render(state.energy, elapsed)
+                oscilloscope_renderer.render(state, elapsed)
+                artwork_renderer.render(state, elapsed)
+                window.present()
         finally:
             if audio_input is not None:
                 audio_input.stop()
             window.close()
+
+    def _handle_visual_shortcuts(
+        self,
+        window: GlfwWindow,
+        logo_selector: LogoSelector,
+        artwork_renderer: ArtworkRenderer,
+    ) -> None:
+        """Apply visual cycling shortcuts received by the window."""
+        for key in window.consume_pressed_keys():
+            if key in {glfw.KEY_SPACE, glfw.KEY_RIGHT}:
+                logo = logo_selector.advance()
+            elif key == glfw.KEY_LEFT:
+                logo = logo_selector.advance(-1)
+            else:
+                continue
+            artwork_renderer.select_logo(logo)
+            self._logger.info("Centre visual selected: %s", logo)
 
 
 def main() -> None:
@@ -63,11 +101,18 @@ def main() -> None:
     parser.add_argument("--fullscreen", action="store_true", help="start in fullscreen")
     parser.add_argument("--width", type=int, default=1280, help="window width")
     parser.add_argument("--height", type=int, default=720, help="window height")
+    parser.add_argument(
+        "--audio-device",
+        help="name of the virtual system-audio input device (for example BlackHole)",
+    )
+    parser.add_argument("--logo", choices=LOGO_NAMES, default="frog")
     args = parser.parse_args()
     settings = AppSettings(
         width=args.width,
         height=args.height,
         fullscreen=args.fullscreen,
         enable_audio=not args.no_audio,
+        audio_device=args.audio_device,
+        logo=args.logo,
     )
     MusicScopeApp(settings).run()

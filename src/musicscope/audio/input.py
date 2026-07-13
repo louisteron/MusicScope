@@ -18,12 +18,18 @@ class AudioInput:
         on_frame: Callable[[AudioFrame], None],
         sample_rate: int,
         block_size: int,
+        device: str | None = None,
+        channels: int = 2,
+        on_samples: Callable[[np.ndarray], None] | None = None,
         logger: logging.Logger | None = None,
     ) -> None:
         self._analyzer = analyzer
         self._on_frame = on_frame
         self._sample_rate = sample_rate
         self._block_size = block_size
+        self._device = device
+        self._channels = channels
+        self._on_samples = on_samples
         self._logger = logger or logging.getLogger(__name__)
         self._stream: sd.InputStream | None = None
 
@@ -37,7 +43,8 @@ class AudioInput:
         if self._stream is not None:
             return
         self._stream = sd.InputStream(
-            channels=1,
+            device=self._device,
+            channels=self._channels,
             samplerate=self._sample_rate,
             blocksize=self._block_size,
             callback=self._handle_block,
@@ -62,3 +69,5 @@ class AudioInput:
         if status:
             self._logger.warning("Audio input status: %s", status)
         self._on_frame(self._analyzer.analyze(indata))
+        if self._on_samples is not None:
+            self._on_samples(indata)
