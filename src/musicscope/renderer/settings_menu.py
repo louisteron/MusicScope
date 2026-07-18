@@ -11,7 +11,7 @@ from musicscope.renderer.color_settings import ColorSettings
 class SettingsMenuRenderer:
     """Render a compact phosphor menu in the top-left corner."""
 
-    _TEXTURE_SIZE = (600, 360)
+    _TEXTURE_SIZE = (1000, 500)
     _VERTEX_SHADER = """
         #version 330
         in vec2 in_position;
@@ -49,19 +49,19 @@ class SettingsMenuRenderer:
         vertices = array(
             "f",
             (
-                -1.50,
-                -0.02,
+                -1.55,
+                -0.35,
                 0.0,
                 0.0,
-                -0.20,
-                -0.02,
+                1.40,
+                -0.35,
                 1.0,
                 0.0,
-                -1.50,
+                -1.55,
                 0.94,
                 0.0,
                 1.0,
-                -0.20,
+                1.40,
                 0.94,
                 1.0,
                 1.0,
@@ -78,14 +78,20 @@ class SettingsMenuRenderer:
             data=bytes(self._TEXTURE_SIZE[0] * self._TEXTURE_SIZE[1] * 4),
         )
         self._texture.filter = (moderngl.LINEAR, moderngl.LINEAR)
-        self._lines: tuple[str, ...] | None = None
+        self._lines: tuple[tuple[str, ...], tuple[str, ...]] | None = None
 
-    def render(self, visible: bool, lines: tuple[str, ...]) -> None:
+    def render(
+        self,
+        visible: bool,
+        visual_lines: tuple[str, ...],
+        audio_lines: tuple[str, ...],
+    ) -> None:
         """Draw the menu only while it is open."""
         if not visible:
             return
+        lines = (visual_lines, audio_lines)
         if lines != self._lines:
-            bitmap = self._menu_image(lines).transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+            bitmap = self._menu_image(*lines).transpose(Image.Transpose.FLIP_TOP_BOTTOM)
             self._texture.write(bitmap.tobytes())
             self._lines = lines
         _, _, width, height = self._context.viewport
@@ -98,22 +104,49 @@ class SettingsMenuRenderer:
         self._vertex_array.render(mode=moderngl.TRIANGLE_STRIP)
         self._context.disable(moderngl.BLEND)
 
-    def _menu_image(self, lines: tuple[str, ...]) -> Image.Image:
-        image = Image.new("RGBA", self._TEXTURE_SIZE, (0, 12, 4, 190))
+    def _menu_image(
+        self,
+        visual_lines: tuple[str, ...],
+        audio_lines: tuple[str, ...],
+    ) -> Image.Image:
+        image = Image.new("RGBA", self._TEXTURE_SIZE, (0, 0, 0, 0))
         draw = ImageDraw.Draw(image)
-        draw.rectangle((3, 3, 596, 356), outline=(45, 255, 125, 210), width=4)
+        visual_panel = (8, 8, 480, 440)
+        audio_panel = (520, 8, 992, 310)
+        draw.rounded_rectangle(visual_panel, radius=12, fill=(0, 12, 4, 205))
+        draw.rounded_rectangle(audio_panel, radius=12, fill=(0, 12, 4, 205))
+        draw.rounded_rectangle(visual_panel, radius=12, outline=(45, 255, 125, 210), width=4)
+        draw.rounded_rectangle(audio_panel, radius=12, outline=(45, 255, 125, 210), width=4)
         font = self._font(34)
-        draw.text((28, 22), "OSCILLATION", fill=(75, 255, 145, 255), font=font)
-        for index, line in enumerate(lines):
-            color = (100, 255, 155, 255) if line.startswith(">") else (45, 190, 100, 255)
-            draw.text((28, 92 + index * 58), line, fill=color, font=font)
+        heading_font = self._font(24)
+        draw.text((32, 20), "VISUAL", fill=(75, 255, 145, 255), font=heading_font)
+        draw.text((530, 20), "AUDIO", fill=(75, 255, 145, 255), font=heading_font)
+        self._draw_column(draw, visual_lines, 32, font)
+        self._draw_column(draw, audio_lines, 530, font)
         draw.text(
-            (28, 324),
-            "M CLOSE  ARROWS ADJUST",
+            (32, 456),
+            "M CLOSE",
+            fill=(45, 190, 100, 220),
+            font=self._font(18),
+        )
+        draw.text(
+            (530, 266),
+            "ARROWS ADJUST",
             fill=(45, 190, 100, 220),
             font=self._font(18),
         )
         return image
+
+    @staticmethod
+    def _draw_column(
+        draw: ImageDraw.ImageDraw,
+        lines: tuple[str, ...],
+        x: int,
+        font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
+    ) -> None:
+        for index, line in enumerate(lines):
+            color = (100, 255, 155, 255) if line.startswith(">") else (45, 190, 100, 255)
+            draw.text((x, 86 + index * 66), line, fill=color, font=font)
 
     @staticmethod
     def _font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:

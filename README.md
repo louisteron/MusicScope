@@ -31,31 +31,40 @@ musicscope --audio-device "BlackHole 2ch"
 
 ## Logos réactifs
 
-Les logos, un CD et un vinyle détourés sont fournis et se déforment avec la musique. Sélectionne
-celui à afficher au lancement :
+Le visuel central par défaut est la grenouille, dont les contours réagissent à la musique :
 
 ```bash
 musicscope --logo frog
-musicscope --logo jvb
-musicscope --logo ram
-musicscope --logo cd
-musicscope --logo vinyl
 ```
-
-Pendant l'exécution, appuie sur `Espace` ou `→` pour sélectionner le visuel suivant,
-ou sur `←` pour revenir au précédent.
 
 Appuie sur `M` (ou `F1`) pour ouvrir le menu **OSCILLATION**. Sur certains
 claviers AZERTY macOS, la touche physique `M` est également prise en charge.
-Utilise `↑` et `↓` pour sélectionner l'amplitude, l'épaisseur, la réactivité
-ou le mode couleur, puis `←` et `→` pour modifier la valeur en temps réel.
+Utilise `↑` et `↓` pour sélectionner l'amplitude, l'épaisseur, la réactivité,
+le mode couleur ou la sortie audio, puis `←` et `→` pour modifier la valeur en
+temps réel.
 Appuie de nouveau sur `M` pour le fermer.
+
+La ligne `RECOGNITION` permet de basculer immédiatement entre `AUDD`, `LOCAL CD`
+et `OFF`. `LOCAL CD` arrête AudD et lit les métadonnées du CD présent dans le
+lecteur configuré avec `--cd-device`.
+
+### Sortie jack / chaîne hi-fi
+
+Dans le menu **SETTINGS**, l'option `OUTPUT` est sur `OFF` par défaut. Utilise
+`←` et `→` pour choisir la sortie qui correspond à ta prise jack ou à ton
+adaptateur audio USB : MusicScope renvoie alors l'audio capturé vers cette
+sortie tout en le visualisant et en l'envoyant à AudD.
+
+Ce mode est adapté à une platine vinyle, un lecteur CD/cassette ou un téléphone
+branché sur une **entrée audio** du Raspberry Pi/de la carte son. Avec BlackHole
+sur macOS, préfère généralement un périphérique de sortie multiple dans
+Configuration Audio et MIDI ; activer en plus `OUTPUT` peut dupliquer le son.
 
 Les modes couleur sont :
 
+- `COVER NEON` *(mode par défaut)* : seuls les traits de la cover reprennent
+  ses couleurs d'origine, tout en conservant l'effet néon.
 - `NEON GREEN` : le rendu oscilloscope vert classique.
-- `COVER NEON` : seuls les traits de la cover reprennent ses couleurs d'origine,
-  tout en conservant l'effet néon.
 - `COVER THEME` : la couleur dominante de la cover colore l'oscillation, la
   grille CRT, les informations du morceau et les contours de la cover.
 
@@ -95,3 +104,29 @@ Au démarrage, `✓ AudD provider loaded` confirme l'activation. Sans jeton,
 MusicScope affiche `⚠ AudD disabled (missing API token)` et le visualiseur
 continue sans reconnaissance. ACRCloud reste présent dans le code comme ancien
 fournisseur, mais n'est plus configuré ni utilisé.
+
+## Mode CD local (sans AudD)
+
+Le mode `local-cd` ne transmet aucun extrait audio à AudD. Il lit l'identifiant
+du CD dans un lecteur interne ou USB, recherche ses métadonnées dans MusicBrainz,
+puis récupère la cover via Cover Art Archive et le cache local de MusicScope.
+Il fonctionne donc pour les CD, même si l'entrée audio utilisée pour le
+visualiseur est une autre source.
+
+Installe le support de lecture de CD et la bibliothèque système requise :
+
+```bash
+sudo apt install libdiscid0
+uv sync --extra cd
+```
+
+Puis démarre MusicScope avec le lecteur optique (sur Raspberry Pi/Linux,
+`/dev/sr0` est courant) :
+
+```bash
+musicscope --recognition-mode local-cd --cd-device /dev/sr0
+```
+
+Le mode CD reste dépendant de MusicBrainz et de Cover Art Archive pour les
+métadonnées et la cover, mais ne nécessite aucune clé API ni AudD. Si le CD
+n'est pas référencé, MusicScope continue normalement sans modifier le visuel.

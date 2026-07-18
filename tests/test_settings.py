@@ -2,7 +2,7 @@
 
 import pytest
 
-from musicscope.config import AppSettings
+from musicscope.config import AppSettings, RecognitionMode
 
 
 def test_settings_reject_non_positive_window_dimensions() -> None:
@@ -21,6 +21,11 @@ def test_settings_reject_an_unknown_logo() -> None:
         AppSettings(logo="unknown")
 
 
-@pytest.mark.parametrize("logo", ("cd", "vinyl"))
-def test_settings_accept_disc_visuals(logo: str) -> None:
-    assert AppSettings(logo=logo).logo == logo
+def test_settings_accepts_the_frog_visual() -> None:
+    assert AppSettings(logo="frog").logo == "frog"
+
+
+def test_settings_supports_local_cd_metadata_mode() -> None:
+    settings = AppSettings(recognition_mode=RecognitionMode.LOCAL_CD, cd_device="/dev/sr0")
+
+    assert settings.recognition_mode is RecognitionMode.LOCAL_CD

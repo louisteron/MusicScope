@@ -1,8 +1,17 @@
 """Typed, immutable application settings."""
 
 from dataclasses import dataclass
+from enum import StrEnum
 
-LOGO_NAMES = ("frog", "jvb", "ram", "cd", "vinyl")
+LOGO_NAMES = ("frog",)
+
+
+class RecognitionMode(StrEnum):
+    """Ways MusicScope can obtain music metadata."""
+
+    AUDD = "audd"
+    LOCAL_CD = "local-cd"
+    OFF = "off"
 
 
 @dataclass(frozen=True, slots=True)
@@ -15,6 +24,8 @@ class AppSettings:
     fullscreen: bool = False
     enable_audio: bool = True
     audio_device: str | None = None
+    cd_device: str | None = None
+    recognition_mode: RecognitionMode = RecognitionMode.AUDD
     logo: str = "frog"
     sample_rate: int = 44_100
     block_size: int = 1_024

@@ -15,10 +15,6 @@ class ArtworkRenderer:
 
     _LOGO_FILENAMES = {
         "frog": "frog.jpg",
-        "jvb": "logo-jvb.png",
-        "ram": "logo-ram.png",
-        "cd": "disc-cd.png",
-        "vinyl": "disc-vinyl.png",
     }
 
     _VERTEX_SHADER = """
@@ -104,10 +100,6 @@ class ArtworkRenderer:
         self._loaded_path: str | None = None
         self._load_texture(self._logo_path)
 
-    def select_logo(self, logo: str) -> None:
-        """Select a bundled visual to load during the next render pass."""
-        self._logo_path = self._assets_directory / self._LOGO_FILENAMES[logo]
-
     def render(self, state: VisualState, elapsed: float) -> None:
         """Render the bundled logo, or future scene artwork when it is available."""
         artwork_path = Path(state.artwork_path) if state.artwork_path else self._logo_path
@@ -149,7 +141,6 @@ class ArtworkRenderer:
             rgba = self._prepare_image(
                 image,
                 isolate_foreground=artwork_path.name == "frog.jpg",
-                crop_transparent_border=artwork_path.name == "logo-jvb.png",
                 crop_to_square=artwork_path != self._logo_path,
             )
             if artwork_path != self._logo_path:

@@ -2,6 +2,7 @@
 
 import logging
 import queue
+import time
 from collections.abc import Callable
 from contextlib import suppress
 from threading import Event, Thread
@@ -23,6 +24,8 @@ class RecognitionService:
         on_identification: Callable[[IdentificationResult], None],
         clip_seconds: int = 8,
         minimum_rms: float = 0.003,
+        request_cooldown_seconds: float = 10.0,
+        clock: Callable[[], float] = time.monotonic,
         logger: logging.Logger | None = None,
     ) -> None:
         self._workflow = workflow
@@ -31,16 +34,23 @@ class RecognitionService:
         self._clip_size = sample_rate * clip_seconds
         self._clip_seconds = clip_seconds
         self._minimum_rms = minimum_rms
+        self._request_cooldown_seconds = request_cooldown_seconds
+        self._clock = clock
         self._samples: queue.Queue[np.ndarray | None] = queue.Queue(maxsize=128)
         self._stopped = Event()
         self._thread: Thread | None = None
         self._logger = logger or logging.getLogger("musicscope")
+        self._next_request_at = 0.0
 
     def start(self) -> None:
         """Start the worker before audio capture starts."""
         if self._thread is not None:
             return
-        self._logger.info("AudD recognition enabled: sampling %s-second clips.", self._clip_seconds)
+        self._logger.info(
+            "AudD waits for audible audio: %s-second clips at most every %s seconds.",
+            self._clip_seconds,
+            self._request_cooldown_seconds,
+        )
         self._thread = Thread(target=self._run, name="music-recognition", daemon=True)
         self._thread.start()
 
@@ -69,6 +79,8 @@ class RecognitionService:
             block = self._samples.get()
             if block is None:
                 return
+            if not chunks and not self._should_collect(block):
+                continue
             chunks.append(block.reshape(-1))
             count += block.size
             if count < self._clip_size:
@@ -84,6 +96,7 @@ class RecognitionService:
                 sample_rate=self._sample_rate,
             )
             self._logger.info("Sending audio clip to AudD for identification.")
+            self._next_request_at = self._clock() + self._request_cooldown_seconds
             try:
                 result = self._workflow.identify(clip)
             except (OSError, ValueError) as error:
@@ -98,3 +111,7 @@ class RecognitionService:
         """Avoid spending an AudD request on silence from the system loopback."""
         rms = float(np.sqrt(np.mean(np.square(samples, dtype=np.float64))))
         return rms >= self._minimum_rms
+
+    def _should_collect(self, samples: np.ndarray) -> bool:
+        """Collect only audible blocks and respect the request cooldown without needing silence."""
+        return self._has_audible_signal(samples) and self._clock() >= self._next_request_at

@@ -16,7 +16,7 @@ class ColorMode(StrEnum):
 class ColorSettings:
     """Store the selected treatment and current cover's dominant color."""
 
-    mode: ColorMode = ColorMode.NEON_GREEN
+    mode: ColorMode = ColorMode.COVER_NEON
     primary_color: tuple[float, float, float] = (0.10, 1.0, 0.34)
 
     def cycle_mode(self, direction: int) -> None:
