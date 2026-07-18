@@ -2,6 +2,7 @@
 
 import numpy as np
 
+from musicscope.renderer.oscillation_settings import OscillationSettings
 from musicscope.renderer.oscilloscope import OscilloscopeRenderer
 
 
@@ -15,8 +16,19 @@ def test_stroke_geometry_expands_a_line_segment_to_two_triangles() -> None:
 def test_idle_waveform_is_centered_on_the_scope_screen() -> None:
     renderer = object.__new__(OscilloscopeRenderer)
     renderer._sample_count = 8
+    renderer._settings = OscillationSettings()
     vertices = renderer._waveform_vertices(())
     assert set(vertices[:, 1]) == {0.0}
+
+
+def test_waveform_uses_the_expanded_vertical_scale() -> None:
+    renderer = object.__new__(OscilloscopeRenderer)
+    renderer._sample_count = 8
+    renderer._settings = OscillationSettings()
+
+    vertices = renderer._waveform_vertices((1.0,) * 8)
+
+    assert np.isclose(vertices[3, 1], OscilloscopeRenderer._VERTICAL_SCALE)
 
 
 def test_waveform_interpolation_moves_toward_new_audio_over_multiple_frames() -> None:
@@ -24,7 +36,7 @@ def test_waveform_interpolation_moves_toward_new_audio_over_multiple_frames() ->
     renderer._sample_count = 4
     renderer._display_waveform = None
     renderer._last_frame_time = None
+    renderer._settings = OscillationSettings()
     renderer._interpolate_waveform((0.0, 0.0, 0.0, 0.0), elapsed=0.0)
     frame = renderer._interpolate_waveform((1.0, 1.0, 1.0, 1.0), elapsed=0.016)
     assert 0.0 < frame[0] < 1.0
-

@@ -5,12 +5,15 @@ import math
 import moderngl
 import numpy as np
 
+from musicscope.renderer.color_settings import ColorSettings
+from musicscope.renderer.oscillation_settings import OscillationSettings
 from musicscope.scene.model import VisualState
 
 
 class OscilloscopeRenderer:
     """Render an audio trace and an emblem whose contours respond to sound."""
 
+    _VERTICAL_SCALE = 0.48
     _VERTEX_SHADER = """
         #version 330
         in vec2 in_position;
@@ -28,14 +31,23 @@ class OscilloscopeRenderer:
         #version 330
         in float intensity;
         in float opacity;
+        uniform vec3 u_theme_color;
         out vec4 fragment_color;
         void main() {
-            fragment_color = vec4(0.12 * intensity, intensity, 0.36 * intensity, opacity);
+            fragment_color = vec4(u_theme_color * intensity, opacity);
         }
     """
 
-    def __init__(self, context: moderngl.Context, sample_count: int = 512) -> None:
+    def __init__(
+        self,
+        context: moderngl.Context,
+        sample_count: int = 512,
+        settings: OscillationSettings | None = None,
+        color_settings: ColorSettings | None = None,
+    ) -> None:
         self._context = context
+        self._settings = settings or OscillationSettings()
+        self._color_settings = color_settings or ColorSettings()
         self._sample_count = sample_count
         self._display_waveform: np.ndarray | None = None
         self._last_frame_time: float | None = None
@@ -53,11 +65,13 @@ class OscilloscopeRenderer:
         intensity = state.energy * 1.2 + 0.35
         self._context.enable(moderngl.BLEND)
         self._context.blend_func = (moderngl.SRC_ALPHA, moderngl.ONE)
-        self._draw(waveform, intensity=intensity, thickness=0.020, opacity=0.018)
-        self._draw(waveform, intensity=intensity, thickness=0.0040, opacity=0.16)
-        self._draw(waveform, intensity=intensity, thickness=0.030, opacity=0.06)
-        self._draw(waveform, intensity=intensity, thickness=0.012, opacity=0.16)
-        self._draw(waveform, intensity=intensity, thickness=0.0045, opacity=0.90)
+        thickness = self._settings.thickness
+        self._program["u_theme_color"].value = self._color_settings.theme_color
+        self._draw(waveform, intensity=intensity, thickness=0.020 * thickness, opacity=0.018)
+        self._draw(waveform, intensity=intensity, thickness=0.0040 * thickness, opacity=0.16)
+        self._draw(waveform, intensity=intensity, thickness=0.030 * thickness, opacity=0.06)
+        self._draw(waveform, intensity=intensity, thickness=0.012 * thickness, opacity=0.16)
+        self._draw(waveform, intensity=intensity, thickness=0.0045 * thickness, opacity=0.90)
         self._context.disable(moderngl.BLEND)
 
     def _draw(
@@ -105,7 +119,7 @@ class OscilloscopeRenderer:
             return target
         previous_time = self._last_frame_time if self._last_frame_time is not None else elapsed
         delta_time = max(0.0, elapsed - previous_time)
-        blend = 1.0 - math.exp(-delta_time * 32.0)
+        blend = 1.0 - math.exp(-delta_time * self._settings.response)
         self._display_waveform += (target - self._display_waveform) * blend
         self._last_frame_time = elapsed
         return self._display_waveform
@@ -116,7 +130,7 @@ class OscilloscopeRenderer:
         values = self._trigger(values)
         values = np.convolve(values, np.full(5, 0.2, dtype="f4"), mode="same")
         x = np.linspace(-0.92, 0.92, self._sample_count, dtype="f4")
-        y = values * 0.30
+        y = values * self._settings.amplitude
         return np.column_stack((x, y))
 
     def _trigger(self, values: np.ndarray) -> np.ndarray:

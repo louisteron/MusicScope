@@ -45,6 +45,20 @@ musicscope --logo vinyl
 Pendant l'exécution, appuie sur `Espace` ou `→` pour sélectionner le visuel suivant,
 ou sur `←` pour revenir au précédent.
 
+Appuie sur `M` (ou `F1`) pour ouvrir le menu **OSCILLATION**. Sur certains
+claviers AZERTY macOS, la touche physique `M` est également prise en charge.
+Utilise `↑` et `↓` pour sélectionner l'amplitude, l'épaisseur, la réactivité
+ou le mode couleur, puis `←` et `→` pour modifier la valeur en temps réel.
+Appuie de nouveau sur `M` pour le fermer.
+
+Les modes couleur sont :
+
+- `NEON GREEN` : le rendu oscilloscope vert classique.
+- `COVER NEON` : seuls les traits de la cover reprennent ses couleurs d'origine,
+  tout en conservant l'effet néon.
+- `COVER THEME` : la couleur dominante de la cover colore l'oscillation, la
+  grille CRT, les informations du morceau et les contours de la cover.
+
 ## Développement
 
 ```bash
@@ -57,10 +71,27 @@ vie, `audio` produit les analyses, `scene` stocke l'état visuel, `graphics` et
 `renderer` dessinent, `window` encapsule GLFW, et `config`/`utils` fournissent
 les services transverses.
 
-## Reconnaissance ACRCloud et illustrations
+## Reconnaissance musicale avec AudD
 
-L'interface et les fournisseurs ACRCloud/Cover Art Archive sont conservés dans
-le projet, mais la reconnaissance est volontairement désactivée pour l'instant.
-MusicScope ne charge donc pas `.env` et n'effectue aucune requête réseau au
-démarrage. Le travail actuel est concentré sur la capture SoundDevice,
-l'analyse RMS/FFT, le rendu de la trace et le shader CRT ModernGL.
+MusicScope peut identifier la musique jouée par la sortie système via
+[AudD](https://audd.io/), puis récupérer et mettre en cache la pochette associée.
+
+1. Crée un compte dans le [tableau de bord AudD](https://dashboard.audd.io/) et
+   récupère ton jeton API.
+2. Copie `.env.example` vers `.env` à la racine du projet.
+3. Renseigne la valeur :
+
+   ```env
+   MUSICSCOPE_AUDD_API_TOKEN=ton_jeton_audd
+   ```
+
+4. Lance MusicScope normalement :
+
+   ```bash
+   musicscope --audio-device "BlackHole 2ch"
+   ```
+
+Au démarrage, `✓ AudD provider loaded` confirme l'activation. Sans jeton,
+MusicScope affiche `⚠ AudD disabled (missing API token)` et le visualiseur
+continue sans reconnaissance. ACRCloud reste présent dans le code comme ancien
+fournisseur, mais n'est plus configuré ni utilisé.

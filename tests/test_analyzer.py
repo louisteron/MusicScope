@@ -33,3 +33,27 @@ def test_analyzer_gates_near_silent_input() -> None:
     frame = AudioAnalyzer(waveform_size=8).analyze(np.full(32, 0.001, dtype=np.float32))
     assert frame.volume == 0.0
     assert frame.waveform == (0.0,) * 8
+
+
+def test_analyzer_isolates_the_20_to_100_hz_bass_band() -> None:
+    sample_rate = 4_096
+    samples = np.arange(sample_rate, dtype=np.float32) / sample_rate
+    analyzer = AudioAnalyzer(sample_rate=sample_rate)
+
+    low_bass = analyzer.analyze(np.sin(2 * np.pi * 60 * samples)).bass_energy
+    midrange = analyzer.analyze(np.sin(2 * np.pi * 300 * samples)).bass_energy
+
+    assert low_bass > 0.9
+    assert midrange < 0.01
+
+
+def test_analyzer_scales_bass_energy_with_the_input_level() -> None:
+    sample_rate = 4_096
+    samples = np.arange(sample_rate, dtype=np.float32) / sample_rate
+    analyzer = AudioAnalyzer(sample_rate=sample_rate)
+
+    loud = analyzer.analyze(np.sin(2 * np.pi * 60 * samples)).bass_energy
+    quiet = analyzer.analyze(0.05 * np.sin(2 * np.pi * 60 * samples)).bass_energy
+
+    assert 0.04 < quiet < 0.06
+    assert loud > quiet * 10

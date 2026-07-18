@@ -8,6 +8,7 @@ class VisualState:
     """The renderer-facing state for the active scene."""
 
     energy: float = 0.0
+    bass_energy: float = 0.0
     spectrum: tuple[float, ...] = ()
     waveform: tuple[float, ...] = ()
     track_title: str | None = None

@@ -34,3 +34,26 @@ def test_pipeline_downloads_then_reuses_cached_cover(tmp_path) -> None:
 def test_pipeline_skips_cover_art_archive_without_a_release_id(tmp_path) -> None:
     pipeline = ArtworkPipeline(CoverArtArchiveSource(lambda _: b""), ArtworkCache(tmp_path))
     assert pipeline.resolve(RecognizedTrack("Song", "Artist")) is None
+
+
+def test_pipeline_falls_back_to_provider_artwork_when_archive_is_unavailable(tmp_path) -> None:
+    provider_url = "https://provider.example.test/cover.jpg"
+
+    def get(url: str) -> bytes:
+        if "coverartarchive" in url:
+            raise OSError("archive unavailable")
+        return b"provider-cover"
+
+    pipeline = ArtworkPipeline(CoverArtArchiveSource(get), ArtworkCache(tmp_path), get)
+    track = RecognizedTrack(
+        "Song",
+        "Artist",
+        musicbrainz_release_id="release-id",
+        provider_artwork_url=provider_url,
+    )
+
+    artwork = pipeline.resolve(track)
+
+    assert artwork is not None
+    assert artwork.source_url == provider_url
+    assert artwork.path.read_bytes() == b"provider-cover"

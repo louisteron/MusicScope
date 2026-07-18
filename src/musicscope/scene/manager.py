@@ -31,6 +31,7 @@ class SceneManager:
             waveform = self._smooth_waveform(frame.waveform)
             self._state = VisualState(
                 energy=energy,
+                bass_energy=self._smooth_bass(frame.bass_energy),
                 spectrum=spectrum,
                 waveform=waveform,
                 track_title=self._state.track_title,
@@ -42,6 +43,12 @@ class SceneManager:
         if volume >= self._state.energy:
             return self._state.energy * 0.55 + volume * 0.45
         return self._state.energy * 0.985 + volume * 0.015
+
+    def _smooth_bass(self, bass_energy: float) -> float:
+        """Keep bass hits punchy while allowing their phosphor tail to fade."""
+        if bass_energy >= self._state.bass_energy:
+            return self._state.bass_energy * 0.35 + bass_energy * 0.65
+        return self._state.bass_energy * 0.82 + bass_energy * 0.18
 
     def _smooth_waveform(self, waveform: tuple[float, ...]) -> tuple[float, ...]:
         previous = self._state.waveform
@@ -60,6 +67,7 @@ class SceneManager:
         with self._lock:
             self._state = VisualState(
                 energy=self._state.energy,
+                bass_energy=self._state.bass_energy,
                 spectrum=self._state.spectrum,
                 waveform=self._state.waveform,
                 track_title=title,

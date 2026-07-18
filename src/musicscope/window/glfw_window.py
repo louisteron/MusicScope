@@ -15,6 +15,7 @@ class GlfwWindow:
         self._fullscreen = fullscreen
         self._window: glfw._GLFWwindow | None = None
         self._pressed_keys: deque[int] = deque()
+        self._key_callback = self._on_key
 
     def open(self) -> None:
         """Initialize GLFW and create the native window."""
@@ -30,7 +31,7 @@ class GlfwWindow:
             raise RuntimeError("GLFW could not create an OpenGL window.")
         glfw.make_context_current(self._window)
         glfw.swap_interval(1)
-        glfw.set_key_callback(self._window, self._on_key)
+        glfw.set_key_callback(self._window, self._key_callback)
 
     @property
     def should_close(self) -> bool:

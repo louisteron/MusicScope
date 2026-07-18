@@ -62,3 +62,16 @@ def test_artwork_is_contained_without_stretching() -> None:
 
     assert prepared.size == (512, 512)
     assert prepared.getchannel("A").getbbox() == (0, 192, 512, 320)
+
+
+def test_cover_art_is_center_cropped_to_a_square() -> None:
+    image = Image.new("RGBA", (400, 100), "white")
+
+    prepared = ArtworkRenderer._prepare_image(
+        image,
+        isolate_foreground=False,
+        crop_to_square=True,
+    )
+
+    assert prepared.size == (512, 512)
+    assert prepared.getchannel("A").getbbox() == (0, 0, 512, 512)

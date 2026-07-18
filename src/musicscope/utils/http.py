@@ -1,13 +1,21 @@
 """Small standard-library HTTP adapters for external-service boundaries."""
 
+import ssl
 from collections.abc import Mapping
 from urllib.request import Request, urlopen
+
+import certifi
+
+
+def trusted_ssl_context() -> ssl.SSLContext:
+    """Use certifi's CA bundle when Python lacks the operating-system roots."""
+    return ssl.create_default_context(cafile=certifi.where())
 
 
 def get_bytes(url: str, timeout: float = 10.0) -> bytes:
     """Fetch bytes while identifying MusicScope to remote services."""
     request = Request(url, headers={"User-Agent": "MusicScope/0.1"})
-    with urlopen(request, timeout=timeout) as response:  # noqa: S310
+    with urlopen(request, timeout=timeout, context=trusted_ssl_context()) as response:  # noqa: S310
         return response.read()
 
 
@@ -19,5 +27,5 @@ def post_bytes(
 ) -> bytes:
     """POST bytes and return the complete response body."""
     request = Request(url, data=content, headers=dict(headers), method="POST")
-    with urlopen(request, timeout=timeout) as response:  # noqa: S310
+    with urlopen(request, timeout=timeout, context=trusted_ssl_context()) as response:  # noqa: S310
         return response.read()

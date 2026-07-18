@@ -4,6 +4,8 @@ from array import array
 
 import moderngl
 
+from musicscope.renderer.color_settings import ColorSettings
+
 
 class CrtRenderer:
     """Draw a scan-lined oscilloscope background with a subtle grid."""
@@ -22,6 +24,7 @@ class CrtRenderer:
         in vec2 position;
         uniform float u_energy;
         uniform float u_time;
+        uniform vec3 u_theme_color;
         out vec4 fragment_color;
 
         float grid_line(float coordinate, float width) {
@@ -57,12 +60,17 @@ class CrtRenderer:
             float noise = fract(sin(noiseSeed) * 43758.5453);
             float vignette = max(0.24, 1.0 - 0.48 * dot(position, position));
             vec3 base = vec3(0.0004, 0.006, 0.0018);
-            vec3 phosphor = vec3(0.012, 0.34, 0.105) * (grid_line_intensity + u_energy * 0.06);
+            vec3 phosphor = u_theme_color * 0.34 * (grid_line_intensity + u_energy * 0.06);
             fragment_color = vec4(((base + phosphor) * scan + noise * 0.003) * vignette, 1.0);
         }
     """
 
-    def __init__(self, context: moderngl.Context) -> None:
+    def __init__(
+        self,
+        context: moderngl.Context,
+        color_settings: ColorSettings | None = None,
+    ) -> None:
+        self._color_settings = color_settings or ColorSettings()
         self._program = context.program(
             vertex_shader=self._VERTEX_SHADER,
             fragment_shader=self._FRAGMENT_SHADER,
@@ -75,4 +83,5 @@ class CrtRenderer:
         """Draw the background before all phosphor traces."""
         self._program["u_energy"].value = energy
         self._program["u_time"].value = elapsed
+        self._program["u_theme_color"].value = self._color_settings.theme_color
         self._vertex_array.render(mode=moderngl.TRIANGLE_STRIP)

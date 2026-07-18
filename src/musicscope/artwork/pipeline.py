@@ -41,10 +41,19 @@ class ArtworkPipeline:
         return cls(source=CoverArtArchiveSource(), cache=ArtworkCache.default())
 
     def resolve(self, track: RecognizedTrack) -> Artwork | None:
-        """Return a cached Cover Art Archive image for an identified release."""
-        url = self._source.artwork_url(track) or track.provider_artwork_url
+        """Return cached artwork, preferring Cover Art Archive when available."""
+        try:
+            archive_url = self._source.artwork_url(track)
+        except (OSError, ValueError):
+            archive_url = None
+        url = archive_url or track.provider_artwork_url
         if url is None:
             return None
         cached = self._cache.load(url)
-        path = cached or self._cache.store(url, self._get(url))
+        if cached is not None:
+            return Artwork(path=cached, source_url=url)
+        try:
+            path = self._cache.store(url, self._get(url))
+        except OSError:
+            return None
         return Artwork(path=path, source_url=url)
