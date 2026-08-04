@@ -7,6 +7,7 @@ import numpy as np
 
 from musicscope.renderer.color_settings import ColorSettings
 from musicscope.renderer.oscillation_settings import OscillationSettings
+from musicscope.renderer.track_info_settings import TrackInfoSettings
 from musicscope.scene.model import VisualState
 
 
@@ -44,10 +45,12 @@ class OscilloscopeRenderer:
         sample_count: int = 512,
         settings: OscillationSettings | None = None,
         color_settings: ColorSettings | None = None,
+        track_info_settings: TrackInfoSettings | None = None,
     ) -> None:
         self._context = context
         self._settings = settings or OscillationSettings()
         self._color_settings = color_settings or ColorSettings()
+        self._track_info_settings = track_info_settings or TrackInfoSettings()
         self._sample_count = sample_count
         self._display_waveform: np.ndarray | None = None
         self._last_frame_time: float | None = None
@@ -61,17 +64,50 @@ class OscilloscopeRenderer:
 
     def render(self, state: VisualState, elapsed: float) -> None:
         """Draw a centered phosphor waveform with a multi-pass CRT glow."""
+        if self._track_info_settings.lyrics_wave and not state.lyrics_seen:
+            return
+        if self._track_info_settings.lyrics_wave and state.lyric_line is not None:
+            transition_opacity = 1.0 - state.lyric_morph
+            if transition_opacity <= 0.01:
+                return
+        else:
+            transition_opacity = 1.0
         waveform = self._waveform_vertices(self._interpolate_waveform(state.waveform, elapsed))
         intensity = state.energy * 1.2 + 0.35
         self._context.enable(moderngl.BLEND)
         self._context.blend_func = (moderngl.SRC_ALPHA, moderngl.ONE)
         thickness = self._settings.thickness
         self._program["u_theme_color"].value = self._color_settings.theme_color
-        self._draw(waveform, intensity=intensity, thickness=0.020 * thickness, opacity=0.018)
-        self._draw(waveform, intensity=intensity, thickness=0.0040 * thickness, opacity=0.16)
-        self._draw(waveform, intensity=intensity, thickness=0.030 * thickness, opacity=0.06)
-        self._draw(waveform, intensity=intensity, thickness=0.012 * thickness, opacity=0.16)
-        self._draw(waveform, intensity=intensity, thickness=0.0045 * thickness, opacity=0.90)
+        self._draw(
+            waveform,
+            intensity=intensity,
+            thickness=0.020 * thickness,
+            opacity=0.018 * transition_opacity,
+        )
+        self._draw(
+            waveform,
+            intensity=intensity,
+            thickness=0.0040 * thickness,
+            opacity=0.16 * transition_opacity,
+        )
+        self._draw(
+            waveform,
+            intensity=intensity,
+            thickness=0.030 * thickness,
+            opacity=0.06 * transition_opacity,
+        )
+        self._draw(
+            waveform,
+            intensity=intensity,
+            thickness=0.012 * thickness,
+            opacity=0.16 * transition_opacity,
+        )
+        self._draw(
+            waveform,
+            intensity=intensity,
+            thickness=0.0045 * thickness,
+            opacity=0.90 * transition_opacity,
+        )
         self._context.disable(moderngl.BLEND)
 
     def _draw(
@@ -94,12 +130,15 @@ class OscilloscopeRenderer:
         end = vertices[1:]
         direction = end - start
         length = np.linalg.norm(direction, axis=1, keepdims=True)
-        normal = np.divide(
-            np.column_stack((-direction[:, 1], direction[:, 0])),
-            length,
-            out=np.zeros_like(direction),
-            where=length > 0.0,
-        ) * thickness
+        normal = (
+            np.divide(
+                np.column_stack((-direction[:, 1], direction[:, 0])),
+                length,
+                out=np.zeros_like(direction),
+                where=length > 0.0,
+            )
+            * thickness
+        )
         triangles = (
             start + normal,
             start - normal,

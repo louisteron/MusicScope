@@ -40,9 +40,20 @@ musicscope --logo frog
 Appuie sur `M` (ou `F1`) pour ouvrir le menu **OSCILLATION**. Sur certains
 claviers AZERTY macOS, la touche physique `M` est également prise en charge.
 Utilise `↑` et `↓` pour sélectionner l'amplitude, l'épaisseur, la réactivité,
-le mode couleur ou la sortie audio, puis `←` et `→` pour modifier la valeur en
-temps réel.
+le mode couleur, la palette `PHOSPHOR`, `TRACK NO.`, ou la sortie audio, puis
+`←` et `→` pour modifier la valeur en temps réel. `PHOSPHOR` propose vert,
+blanc, ambre, bleu et violet pour tout l'environnement oscilloscope.
+`TRACK NO.` affiche ou masque le numéro de piste quand il est disponible,
+notamment avec un CD local.
 Appuie de nouveau sur `M` pour le fermer.
+
+Pour éjecter le CD sans quitter MusicScope, utilise `⌘E` sur macOS ou `Ctrl+E`
+sur Windows et Linux. La lecture est arrêtée avant l'éjection.
+
+Avec un CD local en lecture, appuie sur `Espace` pour afficher la barre de
+transport : le temps courant et la durée de la piste apparaissent. Clique sur
+la barre pour avancer ou reculer dans le morceau, puis appuie de nouveau sur
+`Espace` pour la masquer.
 
 La ligne `RECOGNITION` permet de basculer immédiatement entre `AUDD`, `LOCAL CD`
 et `OFF`. `LOCAL CD` arrête AudD et lit les métadonnées du CD présent dans le
@@ -110,6 +121,7 @@ fournisseur, mais n'est plus configuré ni utilisé.
 Le mode `local-cd` ne transmet aucun extrait audio à AudD. Il lit l'identifiant
 du CD dans un lecteur interne ou USB, recherche ses métadonnées dans MusicBrainz,
 puis récupère la cover via Cover Art Archive et le cache local de MusicScope.
+Lorsqu'un CD audio est présent, MusicScope lance aussi sa lecture avec `mpv`.
 Il fonctionne donc pour les CD, même si l'entrée audio utilisée pour le
 visualiseur est une autre source.
 
@@ -117,6 +129,7 @@ Installe le support de lecture de CD et la bibliothèque système requise :
 
 ```bash
 sudo apt install libdiscid0
+sudo apt install mpv
 uv sync --extra cd
 ```
 
@@ -130,3 +143,16 @@ musicscope --recognition-mode local-cd --cd-device /dev/sr0
 Le mode CD reste dépendant de MusicBrainz et de Cover Art Archive pour les
 métadonnées et la cover, mais ne nécessite aucune clé API ni AudD. Si le CD
 n'est pas référencé, MusicScope continue normalement sans modifier le visuel.
+Sur macOS, installe le lecteur avec `brew install mpv`.
+
+### Secours des paroles avec Musixmatch
+
+Pour améliorer la couverture des paroles synchronisées, MusicScope consulte
+d'abord LRCLIB, puis Musixmatch si LRCLIB ne retourne rien. Ajoute ta clé
+Musixmatch dans `.env` :
+
+```env
+MUSICSCOPE_MUSIXMATCH_API_KEY=ta_cle_musixmatch
+```
+
+Sans cette clé, Musixmatch reste désactivé et MusicScope continue avec LRCLIB.

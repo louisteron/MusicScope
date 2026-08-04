@@ -14,6 +14,7 @@ class IdentificationResult:
 
     track: RecognizedTrack
     artwork: Artwork | None
+    album_tracks: tuple[RecognizedTrack, ...] = ()
 
 
 class IdentificationWorkflow:

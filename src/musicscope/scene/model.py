@@ -13,4 +13,9 @@ class VisualState:
     waveform: tuple[float, ...] = ()
     track_title: str | None = None
     artist_name: str | None = None
+    track_number: int | None = None
+    lyric_line: str | None = None
+    lyric_opacity: float = 1.0
+    lyric_morph: float = 1.0
+    lyrics_seen: bool = False
     artwork_path: str | None = None

@@ -24,3 +24,20 @@ def test_output_settings_cycles_from_off_to_first_device() -> None:
     output.cycle(1)
 
     assert output.label == "HI-FI"
+
+
+def test_output_settings_selects_speakers_for_cd_playback() -> None:
+    output = AudioOutputSettings(
+        AudioOutputDeviceSelector(
+            lambda: (
+                {"name": "BlackHole 2ch", "max_output_channels": 2},
+                {"name": "Haut-parleurs MacBook Air", "max_output_channels": 2},
+                {"name": "Headphones / Jack", "max_output_channels": 2},
+            )
+        ).available()
+    )
+
+    device = output.select_speakers()
+
+    assert device is not None
+    assert device.name == "Haut-parleurs MacBook Air"

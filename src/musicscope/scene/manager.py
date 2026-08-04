@@ -24,10 +24,14 @@ class SceneManager:
         with self._lock:
             energy = self._smooth_energy(frame.volume)
             previous = self._state.spectrum
-            spectrum = tuple(
-                old * 0.65 + new * 0.35
-                for old, new in zip(previous, frame.spectrum, strict=True)
-            ) if previous else frame.spectrum
+            spectrum = (
+                tuple(
+                    old * 0.65 + new * 0.35
+                    for old, new in zip(previous, frame.spectrum, strict=True)
+                )
+                if previous
+                else frame.spectrum
+            )
             waveform = self._smooth_waveform(frame.waveform)
             self._state = VisualState(
                 energy=energy,
@@ -36,6 +40,11 @@ class SceneManager:
                 waveform=waveform,
                 track_title=self._state.track_title,
                 artist_name=self._state.artist_name,
+                track_number=self._state.track_number,
+                lyric_line=self._state.lyric_line,
+                lyric_opacity=self._state.lyric_opacity,
+                lyric_morph=self._state.lyric_morph,
+                lyrics_seen=self._state.lyrics_seen,
                 artwork_path=self._state.artwork_path,
             )
 
@@ -62,7 +71,13 @@ class SceneManager:
             for old, new in zip(previous, waveform, strict=True)
         )
 
-    def set_track(self, title: str, artist: str, artwork_path: str | None) -> None:
+    def set_track(
+        self,
+        title: str,
+        artist: str,
+        artwork_path: str | None,
+        track_number: int | None = None,
+    ) -> None:
         """Publish recognized metadata as renderer-neutral scene state."""
         with self._lock:
             self._state = VisualState(
@@ -72,5 +87,33 @@ class SceneManager:
                 waveform=self._state.waveform,
                 track_title=title,
                 artist_name=artist,
+                track_number=track_number,
+                lyric_line=None,
+                lyric_opacity=1.0,
+                lyric_morph=1.0,
+                lyrics_seen=False,
                 artwork_path=artwork_path,
+            )
+
+    def set_lyric_line(
+        self,
+        line: str | None,
+        opacity: float = 1.0,
+        morph: float = 1.0,
+    ) -> None:
+        """Publish the currently active timed lyric line."""
+        with self._lock:
+            self._state = VisualState(
+                energy=self._state.energy,
+                bass_energy=self._state.bass_energy,
+                spectrum=self._state.spectrum,
+                waveform=self._state.waveform,
+                track_title=self._state.track_title,
+                artist_name=self._state.artist_name,
+                track_number=self._state.track_number,
+                lyric_line=line,
+                lyric_opacity=max(0.0, min(1.0, opacity)),
+                lyric_morph=max(0.0, min(1.0, morph)),
+                lyrics_seen=self._state.lyrics_seen or line is not None,
+                artwork_path=self._state.artwork_path,
             )

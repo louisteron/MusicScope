@@ -58,6 +58,30 @@ def test_provider_returns_none_for_a_no_match() -> None:
     assert provider.identify(AudioClip(content=b"wav", sample_rate=44_100)) is None
 
 
+def test_provider_rejects_an_explicit_low_confidence_match() -> None:
+    provider = AudDProvider(
+        AudDCredentials("token"),
+        post=lambda _url, _body, _headers: b'''{
+            "status": "success",
+            "result": {"artist": "Wrong Artist", "title": "Wrong Song", "score": 20}
+        }''',
+    )
+
+    assert provider.identify(AudioClip(content=b"wav", sample_rate=44_100)) is None
+
+
+def test_provider_accepts_a_normalised_high_confidence_match() -> None:
+    provider = AudDProvider(
+        AudDCredentials("token"),
+        post=lambda _url, _body, _headers: b'''{
+            "status": "success",
+            "result": {"artist": "Daft Punk", "title": "One More Time", "score": 0.9}
+        }''',
+    )
+
+    assert provider.identify(AudioClip(content=b"wav", sample_rate=44_100)) is not None
+
+
 def test_provider_logs_a_network_failure(caplog: pytest.LogCaptureFixture) -> None:
     provider = AudDProvider(
         AudDCredentials("token"),

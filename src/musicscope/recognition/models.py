@@ -19,5 +19,6 @@ class RecognizedTrack:
     title: str
     artist: str
     album: str | None = None
+    track_number: int | None = None
     musicbrainz_release_id: str | None = None
     provider_artwork_url: str | None = None

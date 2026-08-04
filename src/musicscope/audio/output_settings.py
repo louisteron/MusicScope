@@ -28,3 +28,27 @@ class AudioOutputSettings:
         """Select the previous or next output; ``OFF`` is part of the cycle."""
         choices = len(self.devices) + 1
         self.selected_index = (self.selected_index + direction + 1) % choices - 1
+
+    def select_speakers(self) -> AudioOutputDevice | None:
+        """Select integrated speakers, falling back to the first physical output."""
+        speaker_markers = ("haut-parleurs", "speakers", "speaker", "built-in")
+        loopback_markers = ("blackhole", "loopback", "soundflower", "vb-cable", "cable output")
+        index = next(
+            (
+                position
+                for position, device in enumerate(self.devices)
+                if any(marker in device.name.casefold() for marker in speaker_markers)
+            ),
+            None,
+        )
+        if index is None:
+            index = next(
+                (
+                    position
+                    for position, device in enumerate(self.devices)
+                    if not any(marker in device.name.casefold() for marker in loopback_markers)
+                ),
+                None,
+            )
+        self.selected_index = index if index is not None else -1
+        return self.selected_device

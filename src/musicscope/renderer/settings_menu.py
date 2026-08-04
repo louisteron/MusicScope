@@ -111,7 +111,7 @@ class SettingsMenuRenderer:
     ) -> Image.Image:
         image = Image.new("RGBA", self._TEXTURE_SIZE, (0, 0, 0, 0))
         draw = ImageDraw.Draw(image)
-        visual_panel = (8, 8, 480, 440)
+        visual_panel = (8, 8, 480, 498)
         audio_panel = (520, 8, 992, 310)
         draw.rounded_rectangle(visual_panel, radius=12, fill=(0, 12, 4, 205))
         draw.rounded_rectangle(audio_panel, radius=12, fill=(0, 12, 4, 205))
@@ -124,7 +124,7 @@ class SettingsMenuRenderer:
         self._draw_column(draw, visual_lines, 32, font)
         self._draw_column(draw, audio_lines, 530, font)
         draw.text(
-            (32, 456),
+            (32, 472),
             "M CLOSE",
             fill=(45, 190, 100, 220),
             font=self._font(18),
@@ -146,7 +146,7 @@ class SettingsMenuRenderer:
     ) -> None:
         for index, line in enumerate(lines):
             color = (100, 255, 155, 255) if line.startswith(">") else (45, 190, 100, 255)
-            draw.text((x, 86 + index * 66), line, fill=color, font=font)
+            draw.text((x, 86 + index * 44), line, fill=color, font=font)
 
     @staticmethod
     def _font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:

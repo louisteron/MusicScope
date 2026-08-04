@@ -8,6 +8,7 @@ from musicscope.config import RecognitionMode
 from musicscope.core.recognition_settings import RecognitionSettings
 from musicscope.renderer.color_settings import ColorSettings
 from musicscope.renderer.oscillation_settings import OscillationSettings
+from musicscope.renderer.track_info_settings import TrackInfoSettings
 
 
 class OscillationMenu:
@@ -18,6 +19,11 @@ class OscillationMenu:
         "Thickness",
         "Response",
         "Color Mode",
+        "Phosphor Color",
+        "Track Number",
+        "Lyrics Wave",
+        "Text Wave",
+        "Lyric Entry",
         "Audio Output",
         "Recognition",
     )
@@ -26,6 +32,7 @@ class OscillationMenu:
         self,
         settings: OscillationSettings,
         color_settings: ColorSettings,
+        track_info_settings: TrackInfoSettings | None = None,
         output_settings: AudioOutputSettings | None = None,
         on_output_change: Callable[[AudioOutputDevice | None], None] | None = None,
         recognition_settings: RecognitionSettings | None = None,
@@ -33,6 +40,7 @@ class OscillationMenu:
     ) -> None:
         self._settings = settings
         self._color_settings = color_settings
+        self._track_info_settings = track_info_settings or TrackInfoSettings()
         self._output_settings = output_settings or AudioOutputSettings(())
         self._on_output_change = on_output_change
         self._recognition_settings = recognition_settings or RecognitionSettings(
@@ -61,6 +69,21 @@ class OscillationMenu:
         if setting == "Color Mode":
             self._color_settings.cycle_mode(direction)
             return
+        if setting == "Phosphor Color":
+            self._color_settings.cycle_phosphor_color(direction)
+            return
+        if setting == "Track Number":
+            self._track_info_settings.toggle_track_number()
+            return
+        if setting == "Lyrics Wave":
+            self._track_info_settings.toggle_lyrics_wave()
+            return
+        if setting == "Text Wave":
+            self._track_info_settings.toggle_lyrics_reactive()
+            return
+        if setting == "Lyric Entry":
+            self._track_info_settings.cycle_lyric_entry_effect(direction)
+            return
         if setting == "Audio Output":
             self._output_settings.cycle(direction)
             if self._on_output_change is not None:
@@ -80,8 +103,13 @@ class OscillationMenu:
             f"THICKNESS  {self._settings.thickness:.1f}",
             f"RESPONSE   {self._settings.response:.0f}",
             f"COLOR      {self._color_settings.mode.value}",
+            f"PHOSPHOR   {self._color_settings.phosphor_color.value}",
+            f"TRACK NO.  {'ON' if self._track_info_settings.show_track_number else 'OFF'}",
+            f"LYRICS WAVE  {'ON' if self._track_info_settings.lyrics_wave else 'OFF'}",
+            f"TEXT WAVE  {'ON' if self._track_info_settings.lyrics_reactive else 'OFF'}",
+            f"LYRIC ENTRY  {self._track_info_settings.lyric_entry_effect.value}",
             f"OUTPUT     {self._output_settings.label}",
-            f"RECOGNITION {self._recognition_settings.label}",
+            f"RECOG. {self._recognition_settings.label} {self._recognition_settings.status}",
         )
         return tuple(
             f"{'>' if index == self._selected_index else ' '} {line}"
@@ -91,4 +119,4 @@ class OscillationMenu:
     def columns(self) -> tuple[tuple[str, ...], tuple[str, ...]]:
         """Split visual controls from audio and recognition controls for the overlay."""
         lines = self.lines()
-        return lines[:4], lines[4:]
+        return lines[:9], lines[9:]

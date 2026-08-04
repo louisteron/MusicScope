@@ -32,6 +32,7 @@ class AudDProvider:
     """Identify short audio clips through AudD's standard recognition API."""
 
     _ENDPOINT = "https://api.audd.io/"
+    _MINIMUM_CONFIDENCE = 70
 
     def __init__(
         self,
@@ -92,6 +93,9 @@ class AudDProvider:
             return None
         if not isinstance(result, Mapping):
             return None
+        if not self._is_confident(result):
+            self._logger.info("Ignoring a low-confidence AudD identification.")
+            return None
         title = result.get("title")
         artist = result.get("artist")
         if not isinstance(title, str) or not isinstance(artist, str):
@@ -106,6 +110,24 @@ class AudDProvider:
             musicbrainz_release_id=self._release_id(musicbrainz),
             provider_artwork_url=self._spotify_artwork_url(spotify),
         )
+
+    @classmethod
+    def _is_confident(cls, result: Mapping[str, object]) -> bool:
+        """Reject only explicit low-confidence matches; older responses remain compatible."""
+        score = result.get("score")
+        if isinstance(score, str):
+            try:
+                score = float(score)
+            except ValueError:
+                return True
+        if not isinstance(score, (int, float)):
+            return True
+        threshold = (
+            cls._MINIMUM_CONFIDENCE / 100
+            if 0.0 <= score <= 1.0
+            else cls._MINIMUM_CONFIDENCE
+        )
+        return score >= threshold
 
     @staticmethod
     def _error_message(response: Mapping[str, object]) -> str:

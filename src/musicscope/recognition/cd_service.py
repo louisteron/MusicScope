@@ -3,6 +3,7 @@
 import logging
 from collections.abc import Callable
 from threading import Event, Thread
+from urllib.error import HTTPError
 
 from musicscope.artwork.pipeline import ArtworkPipeline
 from musicscope.recognition.cd import CdMetadataUnavailable, MusicBrainzCdLookup
@@ -50,12 +51,18 @@ class CdMetadataService:
                 release = self._lookup.identify(self._device)
             except CdMetadataUnavailable as error:
                 self._logger.info("Local CD metadata waiting: %s", error)
+            except HTTPError as error:
+                self._logger.warning(
+                    "Local CD metadata lookup failed (HTTP %s): %s", error.code, error.reason
+                )
             except (OSError, ValueError) as error:
                 self._logger.warning("Local CD metadata lookup failed: %s", type(error).__name__)
             else:
                 if release is not None and release.disc_id != self._last_disc_id:
                     self._last_disc_id = release.disc_id
                     artwork = self._artwork_pipeline.resolve(release.track)
-                    self._on_identification(IdentificationResult(release.track, artwork))
+                    self._on_identification(
+                        IdentificationResult(release.track, artwork, album_tracks=release.tracks)
+                    )
                     self._logger.info("Local CD identified: %s", release.track.title)
             self._stopped.wait(self._poll_seconds)

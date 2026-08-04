@@ -6,6 +6,7 @@ import moderngl
 from PIL import Image, ImageDraw, ImageFont
 
 from musicscope.renderer.color_settings import ColorSettings
+from musicscope.renderer.track_info_settings import TrackInfoSettings
 from musicscope.scene.model import VisualState
 
 
@@ -40,9 +41,11 @@ class TrackInfoRenderer:
         self,
         context: moderngl.Context,
         color_settings: ColorSettings | None = None,
+        settings: TrackInfoSettings | None = None,
     ) -> None:
         self._context = context
         self._color_settings = color_settings or ColorSettings()
+        self._settings = settings or TrackInfoSettings()
         self._program = context.program(
             vertex_shader=self._VERTEX_SHADER,
             fragment_shader=self._FRAGMENT_SHADER,
@@ -80,7 +83,9 @@ class TrackInfoRenderer:
 
     def render(self, state: VisualState) -> None:
         """Draw the latest recognized metadata, if the scene has any."""
-        label = self._label_for(state)
+        if self._settings.lyrics_wave:
+            return
+        label = self._label_for(state, show_track_number=self._settings.show_track_number)
         if label is None:
             return
         if label != self._label:
@@ -98,10 +103,15 @@ class TrackInfoRenderer:
         self._context.disable(moderngl.BLEND)
 
     @staticmethod
-    def _label_for(state: VisualState) -> str | None:
+    def _label_for(state: VisualState, show_track_number: bool = False) -> str | None:
         if not state.track_title or not state.artist_name:
             return None
-        title = state.track_title.upper()[:48]
+        prefix = (
+            f"{state.track_number:02d} · "
+            if show_track_number and state.track_number is not None
+            else ""
+        )
+        title = f"{prefix}{state.track_title.upper()}"[:48]
         artist = state.artist_name.upper()[:56]
         return f"{title}\n{artist}"
 

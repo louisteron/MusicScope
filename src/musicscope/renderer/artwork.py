@@ -7,6 +7,7 @@ import numpy as np
 from PIL import Image, ImageOps
 
 from musicscope.renderer.color_settings import ColorMode, ColorSettings
+from musicscope.renderer.track_info_settings import TrackInfoSettings
 from musicscope.scene.model import VisualState
 
 
@@ -22,10 +23,15 @@ class ArtworkRenderer:
         in vec2 in_position;
         in vec2 in_uv;
         uniform float u_aspect_ratio;
+        uniform int u_background;
         out vec2 uv;
         void main() {
             uv = in_uv;
-            gl_Position = vec4(in_position.x / u_aspect_ratio, in_position.y, 0.0, 1.0);
+            vec2 position = in_position;
+            if (u_background == 1) position = in_uv * 2.0 - 1.0;
+            float horizontal = in_position.x / u_aspect_ratio;
+            if (u_background == 1) horizontal = position.x;
+            gl_Position = vec4(horizontal, position.y, 0.0, 1.0);
         }
     """
     _FRAGMENT_SHADER = """
@@ -36,6 +42,8 @@ class ArtworkRenderer:
         uniform float u_time;
         uniform vec3 u_theme_color;
         uniform int u_color_mode;
+        uniform int u_background;
+        uniform float u_aspect_ratio;
         in vec2 uv;
         out vec4 fragment_color;
 
@@ -44,12 +52,21 @@ class ArtworkRenderer:
         }
 
         void main() {
+            vec2 artwork_uv = uv;
+            if (u_background == 1) {
+                if (u_aspect_ratio >= 1.0) {
+                    artwork_uv.y = 0.5 + (uv.y - 0.5) / u_aspect_ratio;
+                } else {
+                    artwork_uv.x = 0.5 + (uv.x - 0.5) * u_aspect_ratio;
+                }
+            }
             vec2 from_center = uv - vec2(0.5);
             float distance = length(from_center);
             vec2 direction = normalize(from_center + vec2(0.0001));
             float shockwave = sin(distance * 76.0 - u_time * 16.0) * u_bass * 0.0035;
             vec2 bass_warp = direction * shockwave;
-            vec2 sample_uv = clamp(uv + bass_warp, vec2(0.001), vec2(0.999));
+            vec2 sample_uv = clamp(artwork_uv + bass_warp, vec2(0.001), vec2(0.999));
+            vec3 sampled_color = texture(u_artwork, sample_uv).rgb;
             vec2 x_offset = vec2(u_texel_size.x, 0.0);
             vec2 y_offset = vec2(0.0, u_texel_size.y);
             vec4 left = texture(u_artwork, sample_uv - x_offset);
@@ -61,8 +78,16 @@ class ArtworkRenderer:
             float contrast_edge = max(horizontal_edge, vertical_edge);
             float alpha_edge = max(abs(left.a - right.a), abs(lower.a - upper.a));
             float trace = smoothstep(0.035, 0.19, max(contrast_edge, alpha_edge));
+            if (u_background == 1) {
+                if (trace < 0.02) discard;
+                vec3 neon = u_theme_color;
+                if (u_color_mode == 1) {
+                    neon = mix(max(sampled_color, vec3(0.10)), vec3(1.0), 0.22);
+                }
+                fragment_color = vec4(neon * (0.22 + trace * 0.40), trace * 0.62);
+                return;
+            }
             if (trace < 0.02) discard;
-            vec3 sampled_color = texture(u_artwork, sample_uv).rgb;
             vec3 phosphor = u_theme_color;
             if (u_color_mode == 1) {
                 float brightness = max(luminance(sampled_color), 0.25);
@@ -80,9 +105,11 @@ class ArtworkRenderer:
         logo: str = "frog",
         subdivisions: int = 24,
         color_settings: ColorSettings | None = None,
+        track_info_settings: TrackInfoSettings | None = None,
     ) -> None:
         self._context = context
         self._color_settings = color_settings or ColorSettings()
+        self._track_info_settings = track_info_settings or TrackInfoSettings()
         self._assets_directory = Path(__file__).resolve().parents[1] / "assets"
         self._logo_path = self._assets_directory / self._LOGO_FILENAMES[logo]
         self._program = context.program(
@@ -112,6 +139,10 @@ class ArtworkRenderer:
         self._texture.use(location=0)
         self._program["u_artwork"].value = 0
         self._program["u_aspect_ratio"].value = self._framebuffer_aspect_ratio()
+        # Keep a neon background visible while metadata/artwork is still being
+        # fetched; the bundled mark is replaced on the next rendered frame
+        # after the real cover reaches the scene.
+        self._program["u_background"].value = int(self._track_info_settings.lyrics_wave)
         self._program["u_texel_size"].value = (
             1.0 / self._texture.width,
             1.0 / self._texture.height,
@@ -224,8 +255,10 @@ class ArtworkRenderer:
         right = (column + 1) / subdivisions
         bottom = row / subdivisions
         top = (row + 1) / subdivisions
+
         def vertex(x: float, y: float) -> tuple[float, ...]:
             return (x * 0.88 - 0.44, y * 0.88 - 0.22, x, y)
+
         return (
             vertex(left, bottom),
             vertex(right, bottom),

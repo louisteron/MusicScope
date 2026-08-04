@@ -29,3 +29,7 @@ def test_settings_supports_local_cd_metadata_mode() -> None:
     settings = AppSettings(recognition_mode=RecognitionMode.LOCAL_CD, cd_device="/dev/sr0")
 
     assert settings.recognition_mode is RecognitionMode.LOCAL_CD
+
+
+def test_settings_start_in_local_cd_mode() -> None:
+    assert AppSettings().recognition_mode is RecognitionMode.LOCAL_CD

@@ -25,7 +25,7 @@ class AppSettings:
     enable_audio: bool = True
     audio_device: str | None = None
     cd_device: str | None = None
-    recognition_mode: RecognitionMode = RecognitionMode.AUDD
+    recognition_mode: RecognitionMode = RecognitionMode.LOCAL_CD
     logo: str = "frog"
     sample_rate: int = 44_100
     block_size: int = 1_024
