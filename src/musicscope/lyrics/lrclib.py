@@ -20,7 +20,10 @@ class LrclibLyricsSource:
 
     def find(self, track: RecognizedTrack) -> tuple[tuple[float, str], ...]:
         """Return matched synced lyrics, or no lines when unavailable."""
-        query = urlencode({"track_name": track.title, "artist_name": track.artist})
+        parameters = {"track_name": track.title}
+        if track.artist.casefold() != "local file":
+            parameters["artist_name"] = track.artist
+        query = urlencode(parameters)
         payload: list[dict[str, Any]] = json.loads(self._get(f"{self._ENDPOINT}?{query}").decode())
         for result in payload if isinstance(payload, list) else []:
             if not isinstance(result, dict) or not self._matches(track, result):
@@ -38,5 +41,8 @@ class LrclibLyricsSource:
             isinstance(title, str)
             and isinstance(artist, str)
             and title.casefold() == track.title.casefold()
-            and artist.casefold() == track.artist.casefold()
+            and (
+                track.artist.casefold() == "local file"
+                or artist.casefold() == track.artist.casefold()
+            )
         )

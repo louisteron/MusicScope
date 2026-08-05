@@ -117,3 +117,31 @@ class SceneManager:
                 lyrics_seen=self._state.lyrics_seen or line is not None,
                 artwork_path=self._state.artwork_path,
             )
+
+    def mark_lyrics_unavailable(self) -> None:
+        """Keep lyrics mode from hiding the normal scope for local files."""
+        with self._lock:
+            self._state = VisualState(
+                energy=self._state.energy,
+                bass_energy=self._state.bass_energy,
+                spectrum=self._state.spectrum,
+                waveform=self._state.waveform,
+                track_title=self._state.track_title,
+                artist_name=self._state.artist_name,
+                track_number=self._state.track_number,
+                lyric_line=None,
+                lyric_opacity=1.0,
+                lyric_morph=1.0,
+                lyrics_seen=True,
+                artwork_path=self._state.artwork_path,
+            )
+
+    def clear_track(self) -> None:
+        """Remove track metadata and artwork after clearing a local playlist."""
+        with self._lock:
+            self._state = VisualState(
+                energy=self._state.energy,
+                bass_energy=self._state.bass_energy,
+                spectrum=self._state.spectrum,
+                waveform=self._state.waveform,
+            )

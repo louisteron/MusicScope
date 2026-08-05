@@ -29,6 +29,15 @@ BlackHole ; sinon précise son nom :
 musicscope --audio-device "BlackHole 2ch"
 ```
 
+### Playlist locale par glisser-déposer
+
+Déposez un ou plusieurs fichiers audio, ou un dossier d'album, directement dans la fenêtre MusicScope. Les fichiers sont ajoutés à une playlist locale et lus à la suite avec `mpv`. MusicScope lit leurs tags intégrés (`titre`, `artiste`, `album` et `numéro de piste`) ; le nom du dossier devient le nom de l'album lorsqu'un tag album est absent. Il utilise d'abord `cover.jpg`, `folder.jpg` ou la cover intégrée au fichier, puis cherche et met en cache la pochette de l'album à partir de ces métadonnées. Les formats pris en charge sont MP3, M4A, FLAC, WAV, OGG, OPUS, AAC et AIFF.
+
+Pour visualiser la musique locale, conservez la même sortie loopback que pour le CD (par exemple BlackHole) : MusicScope envoie `mpv` vers cette entrée et le visualiseur la lit en temps réel.
+Les paroles utilisent aussi le temps de lecture réel de `mpv` : LRCLIB est utilisé en premier, puis Lyrics.ovh en secours lorsque des paroles synchronisées ne sont pas disponibles.
+
+Appuyez sur `P` pour afficher le panneau **PLAYLIST** à droite. Cliquez sur une ligne pour lire ce morceau, glissez-la vers le haut ou le bas pour modifier l'ordre de lecture, cliquez sur `×` pour retirer un morceau, ou choisissez `CLEAR PLAYLIST` pour tout supprimer.
+
 ## Logos réactifs
 
 Le visuel central par défaut est la grenouille, dont les contours réagissent à la musique :
@@ -145,14 +154,9 @@ métadonnées et la cover, mais ne nécessite aucune clé API ni AudD. Si le CD
 n'est pas référencé, MusicScope continue normalement sans modifier le visuel.
 Sur macOS, installe le lecteur avec `brew install mpv`.
 
-### Secours des paroles avec Musixmatch
+### Paroles de secours
 
-Pour améliorer la couverture des paroles synchronisées, MusicScope consulte
-d'abord LRCLIB, puis Musixmatch si LRCLIB ne retourne rien. Ajoute ta clé
-Musixmatch dans `.env` :
-
-```env
-MUSICSCOPE_MUSIXMATCH_API_KEY=ta_cle_musixmatch
-```
-
-Sans cette clé, Musixmatch reste désactivé et MusicScope continue avec LRCLIB.
+MusicScope recherche d'abord des paroles synchronisées via LRCLIB. Si aucune
+ligne LRC n'est disponible, il utilise Lyrics.ovh sans clé API. Ce dernier ne
+fournit pas d'horodatages : les lignes sont donc affichées avec un rythme
+approximatif de quatre secondes par ligne.

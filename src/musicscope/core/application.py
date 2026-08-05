@@ -5,6 +5,7 @@ import logging
 import sys
 import time
 from collections.abc import Callable
+from pathlib import Path
 
 import glfw
 import numpy as np
@@ -19,18 +20,22 @@ from musicscope.audio import (
     AudioOutputSettings,
     CdEjector,
     CdPlayer,
+    LocalArtworkService,
+    LocalPlaylist,
+    LocalPlaylistPlayer,
     SystemAudioDeviceSelector,
 )
 from musicscope.config import LOGO_NAMES, AppSettings, RecognitionMode
 from musicscope.config.environment import load_project_environment
 from musicscope.core.oscillation_menu import OscillationMenu
+from musicscope.core.playlist_menu import PlaylistAction, PlaylistMenu
 from musicscope.core.recognition_settings import RecognitionSettings
 from musicscope.graphics import create_context
 from musicscope.lyrics import (
     FallbackLyricsSource,
     LrclibLyricsSource,
+    LyricsOvhSource,
     LyricsService,
-    MusixmatchLyricsSource,
     display_at,
 )
 from musicscope.recognition import RecognitionEngine
@@ -48,13 +53,14 @@ from musicscope.renderer import (
     OscillationSettings,
     OscilloscopeRenderer,
     PlaybackProgressRenderer,
+    PlaylistMenuRenderer,
     SettingsMenuRenderer,
     TrackInfoRenderer,
     TrackInfoSettings,
 )
 from musicscope.scene import SceneManager
 from musicscope.utils.logging import configure_logging
-from musicscope.window import GlfwWindow, KeyPress
+from musicscope.window import GlfwWindow, KeyPress, MouseButtonEvent
 
 
 class MusicScopeApp:
@@ -85,6 +91,12 @@ class MusicScopeApp:
         cd_duration = 0.0
         playback_progress_visible = False
         lyrics_service: LyricsService | None = None
+        local_playlist = LocalPlaylist()
+        local_player: LocalPlaylistPlayer | None = None
+        local_artwork_service: LocalArtworkService | None = None
+        local_lyrics: tuple[tuple[float, str], ...] = ()
+        local_lyrics_service: LyricsService | None = None
+        local_current_path: Path | None = None
         cd_ejector = CdEjector(device=self._settings.cd_device, logger=self._logger)
         capture_device = None
         try:
@@ -114,6 +126,7 @@ class MusicScopeApp:
             lyrics_renderer = LyricsRenderer(context, color_settings, track_info_settings)
             playback_progress_renderer = PlaybackProgressRenderer(context, color_settings)
             settings_menu_renderer = SettingsMenuRenderer(context, color_settings=color_settings)
+            playlist_menu_renderer = PlaylistMenuRenderer(context, color_settings=color_settings)
             output_settings = AudioOutputSettings(AudioOutputDeviceSelector().available())
             recognition_settings = RecognitionSettings(self._settings.recognition_mode)
 
@@ -125,7 +138,9 @@ class MusicScopeApp:
 
             def select_recognition_mode(mode: RecognitionMode) -> None:
                 nonlocal cd_artwork_path, cd_lyrics, cd_metadata_service, cd_player
-                nonlocal cd_tracks, lyrics_service, recognition_service
+                nonlocal cd_tracks, lyrics_service, local_artwork_service, local_current_path
+                nonlocal local_lyrics_service, local_player
+                nonlocal recognition_service
                 nonlocal cd_duration, cd_position
                 if recognition_service is not None:
                     recognition_service.stop()
@@ -136,6 +151,13 @@ class MusicScopeApp:
                 if cd_player is not None:
                     cd_player.stop()
                     cd_player = None
+                if local_player is not None:
+                    local_player.stop()
+                if local_artwork_service is not None:
+                    local_artwork_service.cancel()
+                if local_lyrics_service is not None:
+                    local_lyrics_service.cancel()
+                local_current_path = None
                 cd_tracks = ()
                 cd_artwork_path = None
                 cd_lyrics = ()
@@ -188,15 +210,11 @@ class MusicScopeApp:
                         nonlocal cd_duration
                         cd_duration = seconds
 
-                    lyric_sources = [LrclibLyricsSource()]
-                    musixmatch = MusixmatchLyricsSource.from_environment()
-                    if musixmatch is not None:
-                        lyric_sources.append(musixmatch)
-                        self._logger.info("Musixmatch lyrics fallback enabled.")
-                    else:
-                        self._logger.info("Musixmatch lyrics fallback disabled (missing API key).")
                     lyrics_service = LyricsService(
-                        FallbackLyricsSource(lyric_sources, logger=self._logger),
+                        FallbackLyricsSource(
+                            (LrclibLyricsSource(), LyricsOvhSource()),
+                            logger=self._logger,
+                        ),
                         set_lyrics,
                         logger=self._logger,
                     )
@@ -276,6 +294,7 @@ class MusicScopeApp:
                 recognition_settings=recognition_settings,
                 on_recognition_change=select_recognition_mode,
             )
+            playlist_menu = PlaylistMenu()
             started_at = time.monotonic()
             if self._settings.enable_audio:
                 device = SystemAudioDeviceSelector().select(self._settings.audio_device)
@@ -310,9 +329,183 @@ class MusicScopeApp:
                     )
                     audio_input.start()
             select_recognition_mode(recognition_settings.mode)
+
+            def update_local_track(number: int) -> None:
+                nonlocal local_current_path
+                item = local_playlist.item_at(number)
+                if item is None:
+                    return
+                local_current_path = item.path
+                self._scene_manager.set_track(
+                    item.track.title,
+                    item.track.artist,
+                    artwork_path=str(item.artwork_path) if item.artwork_path is not None else None,
+                    track_number=item.track.track_number,
+                )
+                self._scene_manager.set_lyric_line(None)
+                if local_artwork_service is not None:
+                    local_artwork_service.load(number)
+                if local_lyrics_service is not None:
+                    local_lyrics_service.load(item.track)
+                self._logger.info(
+                    "Local playlist track: %s — %s", item.track.artist, item.track.title
+                )
+
+            def update_local_artwork(number: int, artwork_path: str | None) -> None:
+                item = local_playlist.item_at(number)
+                if item is None:
+                    return
+                self._scene_manager.set_track(
+                    item.track.title,
+                    item.track.artist,
+                    artwork_path=artwork_path,
+                    track_number=item.track.track_number,
+                )
+
+            def set_local_lyrics(lines: tuple[tuple[float, str], ...]) -> None:
+                nonlocal local_lyrics
+                local_lyrics = lines
+                self._scene_manager.set_lyric_line(None)
+                if not lines:
+                    self._scene_manager.mark_lyrics_unavailable()
+
+            def update_local_lyric_time(seconds: float) -> None:
+                display = display_at(
+                    local_lyrics,
+                    seconds,
+                    entry_effect=track_info_settings.lyric_entry_effect.value,
+                )
+                self._scene_manager.set_lyric_line(
+                    display.line,
+                    display.opacity,
+                    display.morph,
+                )
+
+            local_artwork_service = LocalArtworkService(
+                local_playlist,
+                ArtworkPipeline.default(),
+                update_local_artwork,
+                logger=self._logger,
+            )
+            local_lyrics_service = LyricsService(
+                FallbackLyricsSource(
+                    (LrclibLyricsSource(), LyricsOvhSource()),
+                    logger=self._logger,
+                ),
+                set_local_lyrics,
+                logger=self._logger,
+            )
+
+            local_player = LocalPlaylistPlayer(
+                audio_device=capture_device.name if capture_device is not None else None,
+                audio_device_resolver=CdPlayer()._resolve_mpv_audio_device,
+                on_track_change=update_local_track,
+                on_playback_time=update_local_lyric_time,
+                logger=self._logger,
+            )
+            dragging_playlist_index: int | None = None
+
+            def play_local_playlist(start_at: int = 1) -> None:
+                if local_player is None or not local_playlist.paths:
+                    return
+                local_player.play(local_playlist.paths, start_at=start_at)
+                update_local_track(start_at)
+
+            def clear_local_playlist() -> None:
+                nonlocal local_current_path
+                had_tracks = local_playlist.size > 0
+                if local_player is not None:
+                    local_player.stop()
+                if local_artwork_service is not None:
+                    local_artwork_service.cancel()
+                if local_lyrics_service is not None:
+                    local_lyrics_service.cancel()
+                local_playlist.clear()
+                local_current_path = None
+                if had_tracks:
+                    self._scene_manager.clear_track()
+                self._logger.info("Local playlist cleared.")
+
+            def handle_playlist_mouse(event: MouseButtonEvent) -> None:
+                nonlocal dragging_playlist_index
+                window_width, window_height = window.window_size
+                if event.action == glfw.PRESS:
+                    hit = playlist_menu.action_at(
+                        event.x,
+                        event.y,
+                        window_width,
+                        window_height,
+                        local_playlist.size,
+                    )
+                    if hit is None:
+                        return
+                    action, index = hit
+                    if action is PlaylistAction.CLEAR:
+                        clear_local_playlist()
+                    elif action is PlaylistAction.DELETE and index is not None:
+                        removed = local_playlist.remove(index)
+                        if removed is None:
+                            return
+                        current_index = (
+                            local_playlist.index_of_path(local_current_path)
+                            if local_current_path is not None
+                            else None
+                        )
+                        if local_playlist.size:
+                            play_local_playlist(current_index or min(index, local_playlist.size))
+                        else:
+                            clear_local_playlist()
+                    elif action is PlaylistAction.TRACK:
+                        dragging_playlist_index = index
+                    return
+                if event.action != glfw.RELEASE or dragging_playlist_index is None:
+                    return
+                destination = playlist_menu.track_index_at(
+                    event.x,
+                    event.y,
+                    window_width,
+                    window_height,
+                    local_playlist.size,
+                )
+                source = dragging_playlist_index
+                dragging_playlist_index = None
+                if destination is None:
+                    return
+                if source == destination:
+                    play_local_playlist(source)
+                    self._logger.info("Selected local playlist track %s.", source)
+                    return
+                if local_playlist.move(source, destination):
+                    current_index = (
+                        local_playlist.index_of_path(local_current_path)
+                        if local_current_path is not None
+                        else None
+                    )
+                    play_local_playlist(current_index or 1)
+                    self._logger.info("Local playlist reordered.")
             self._logger.info("MusicScope started. Close the window to quit.")
             while not window.should_close:
                 window.poll_events()
+                dropped_files = window.consume_dropped_files()
+                if dropped_files:
+                    added_tracks = local_playlist.add(dropped_files)
+                    if added_tracks:
+                        recognition_settings.mode = RecognitionMode.OFF
+                        select_recognition_mode(RecognitionMode.OFF)
+                        play_local_playlist()
+                        self._logger.info(
+                            "Added %s local track(s); playlist contains %s track(s).",
+                            len(added_tracks),
+                            len(local_playlist.paths),
+                        )
+                    else:
+                        self._logger.warning(
+                            "No supported audio files were dropped. "
+                            "Supported: MP3, M4A, FLAC, WAV, OGG, OPUS, AAC, AIFF."
+                        )
+                for mouse_event in window.consume_mouse_button_events():
+                    if playlist_menu.visible:
+                        handle_playlist_mouse(mouse_event)
                 keys = window.consume_pressed_keys()
                 for press in keys:
                     if press.key == glfw.KEY_SPACE:
@@ -320,6 +513,11 @@ class MusicScopeApp:
                         self._logger.info(
                             "Playback progress %s.",
                             "shown" if playback_progress_visible else "hidden",
+                        )
+                    if press.key == glfw.KEY_P:
+                        playlist_menu.toggle()
+                        self._logger.info(
+                            "Playlist menu %s.", "opened" if playlist_menu.visible else "closed"
                         )
                 self._handle_shortcuts(
                     keys,
@@ -353,6 +551,15 @@ class MusicScopeApp:
                 )
                 visual_lines, audio_lines = oscillation_menu.columns()
                 settings_menu_renderer.render(oscillation_menu.visible, visual_lines, audio_lines)
+                playlist_menu_renderer.render(
+                    playlist_menu.visible,
+                    local_playlist,
+                    local_playlist.index_of_path(local_current_path)
+                    if local_current_path is not None
+                    else None,
+                    dragging_playlist_index,
+                    playlist_menu.max_visible_tracks,
+                )
                 window.present()
         finally:
             if audio_input is not None:
@@ -365,6 +572,10 @@ class MusicScopeApp:
                 cd_metadata_service.stop()
             if cd_player is not None:
                 cd_player.stop()
+            if local_player is not None:
+                local_player.stop()
+            if local_artwork_service is not None:
+                local_artwork_service.cancel()
             window.close()
 
     def _apply_identification(self, result: IdentificationResult) -> None:

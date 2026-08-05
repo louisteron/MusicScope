@@ -4,7 +4,7 @@ import logging
 from collections.abc import Callable
 from threading import Lock, Thread
 
-from musicscope.lyrics.source import TimedLyricsSource
+from musicscope.lyrics.source import LyricsSource
 from musicscope.recognition.models import RecognizedTrack
 
 LyricsReadyCallback = Callable[[tuple[tuple[float, str], ...]], None]
@@ -15,7 +15,7 @@ class LyricsService:
 
     def __init__(
         self,
-        source: TimedLyricsSource,
+        source: LyricsSource,
         on_lyrics: Callable[[tuple[tuple[float, str], ...]], None],
         logger: logging.Logger | None = None,
     ) -> None:
@@ -36,6 +36,11 @@ class LyricsService:
             request_id = self._request_id
         self._on_lyrics(())
         Thread(target=self._fetch, args=(track, request_id, on_ready), daemon=True).start()
+
+    def cancel(self) -> None:
+        """Discard any lyric lookup still running for a previous playback source."""
+        with self._lock:
+            self._request_id += 1
 
     def _fetch(
         self,

@@ -2,6 +2,7 @@
 
 from collections import deque
 from dataclasses import dataclass
+from pathlib import Path
 
 import glfw
 
@@ -12,6 +13,15 @@ class KeyPress:
 
     key: int
     modifiers: int
+
+
+@dataclass(frozen=True, slots=True)
+class MouseButtonEvent:
+    """One GLFW mouse-button transition in logical window coordinates."""
+
+    x: float
+    y: float
+    action: int
 
 
 class GlfwWindow:
@@ -25,8 +35,11 @@ class GlfwWindow:
         self._window: glfw._GLFWwindow | None = None
         self._pressed_keys: deque[KeyPress] = deque()
         self._mouse_presses: deque[tuple[float, float]] = deque()
+        self._mouse_button_events: deque[MouseButtonEvent] = deque()
+        self._dropped_files: deque[Path] = deque()
         self._key_callback = self._on_key
         self._mouse_callback = self._on_mouse_button
+        self._drop_callback = self._on_drop
 
     def open(self) -> None:
         """Initialize GLFW and create the native window."""
@@ -44,6 +57,7 @@ class GlfwWindow:
         glfw.swap_interval(1)
         glfw.set_key_callback(self._window, self._key_callback)
         glfw.set_mouse_button_callback(self._window, self._mouse_callback)
+        glfw.set_drop_callback(self._window, self._drop_callback)
 
     @property
     def should_close(self) -> bool:
@@ -72,6 +86,18 @@ class GlfwWindow:
         presses = tuple(self._mouse_presses)
         self._mouse_presses.clear()
         return presses
+
+    def consume_mouse_button_events(self) -> tuple[MouseButtonEvent, ...]:
+        """Return left-button press/release events for drag-based controls."""
+        events = tuple(self._mouse_button_events)
+        self._mouse_button_events.clear()
+        return events
+
+    def consume_dropped_files(self) -> tuple[Path, ...]:
+        """Return files and folders dropped onto the window."""
+        paths = tuple(self._dropped_files)
+        self._dropped_files.clear()
+        return paths
 
     @property
     def window_size(self) -> tuple[int, int]:
@@ -111,5 +137,12 @@ class GlfwWindow:
         action: int,
         _modifiers: int,
     ) -> None:
-        if button == glfw.MOUSE_BUTTON_LEFT and action == glfw.PRESS:
-            self._mouse_presses.append(glfw.get_cursor_pos(window))
+        if button != glfw.MOUSE_BUTTON_LEFT:
+            return
+        cursor_x, cursor_y = glfw.get_cursor_pos(window)
+        self._mouse_button_events.append(MouseButtonEvent(cursor_x, cursor_y, action))
+        if action == glfw.PRESS:
+            self._mouse_presses.append((cursor_x, cursor_y))
+
+    def _on_drop(self, _window: glfw._GLFWwindow, paths: list[str]) -> None:
+        self._dropped_files.extend(Path(path) for path in paths)

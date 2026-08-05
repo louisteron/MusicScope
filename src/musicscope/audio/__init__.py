@@ -4,6 +4,10 @@ from musicscope.audio.analyzer import AudioAnalyzer, AudioFrame
 from musicscope.audio.cd_ejector import CdEjector
 from musicscope.audio.cd_player import CdPlayer
 from musicscope.audio.input import AudioInput
+from musicscope.audio.local_artwork_service import LocalArtworkService
+from musicscope.audio.local_metadata import LocalMetadataReader, LocalTrackInfo
+from musicscope.audio.local_playlist import LocalPlaylist
+from musicscope.audio.local_playlist_player import LocalPlaylistPlayer
 from musicscope.audio.mpv_track_monitor import MpvTrackMonitor
 from musicscope.audio.output import AudioOutput, AudioOutputDevice, AudioOutputDeviceSelector
 from musicscope.audio.output_settings import AudioOutputSettings
@@ -15,6 +19,11 @@ __all__ = [
     "CdEjector",
     "CdPlayer",
     "AudioInput",
+    "LocalArtworkService",
+    "LocalMetadataReader",
+    "LocalTrackInfo",
+    "LocalPlaylist",
+    "LocalPlaylistPlayer",
     "MpvTrackMonitor",
     "AudioOutput",
     "AudioOutputDevice",
