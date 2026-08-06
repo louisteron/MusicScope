@@ -178,6 +178,7 @@ class ArtworkRenderer:
                 isolate_foreground=artwork_path.name == "frog.jpg",
                 crop_transparent_border=artwork_path == self._logo_path,
                 crop_to_square=artwork_path != self._logo_path,
+                output_size=2048 if artwork_path == self._logo_path else 512,
             )
             if artwork_path != self._logo_path:
                 self._color_settings.primary_color = self._dominant_color(rgba)
@@ -209,6 +210,7 @@ class ArtworkRenderer:
         isolate_foreground: bool,
         crop_transparent_border: bool = False,
         crop_to_square: bool = False,
+        output_size: int = 512,
     ) -> Image.Image:
         rgb = image.convert("RGB")
         if not isolate_foreground:
@@ -216,7 +218,7 @@ class ArtworkRenderer:
             if crop_to_square:
                 return ImageOps.fit(
                     artwork,
-                    (512, 512),
+                    (output_size, output_size),
                     method=Image.Resampling.LANCZOS,
                     centering=(0.5, 0.5),
                 )
@@ -224,7 +226,7 @@ class ArtworkRenderer:
                 bounds = artwork.getchannel("A").getbbox()
                 if bounds is not None:
                     artwork = artwork.crop(bounds)
-            return ArtworkRenderer._fit_in_square(artwork)
+            return ArtworkRenderer._fit_in_square(artwork, size=output_size)
         pixels = np.asarray(rgb)
         red, green, blue = (pixels[:, :, index] for index in range(3))
         mask = (red > 130) & (blue > 110) & (red - green > 25) & (blue - green > 12)
@@ -234,7 +236,7 @@ class ArtworkRenderer:
         bounds = alpha.getbbox()
         if bounds is not None:
             foreground = foreground.crop(bounds)
-        return ArtworkRenderer._fit_in_square(foreground)
+        return ArtworkRenderer._fit_in_square(foreground, size=output_size)
 
     @staticmethod
     def _fit_in_square(image: Image.Image, size: int = 512) -> Image.Image:

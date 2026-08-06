@@ -20,6 +20,19 @@ def test_musicscope_logo_is_packaged_and_cropped_to_its_visible_art() -> None:
     assert prepared.getchannel("A").getextrema()[0] == 0
 
 
+def test_musicscope_logo_can_keep_a_high_resolution_texture() -> None:
+    path = Path(__file__).parents[1] / "src" / "musicscope" / "assets" / "musicscope-logo.png"
+    with Image.open(path) as image:
+        prepared = ArtworkRenderer._prepare_image(
+            image,
+            isolate_foreground=False,
+            crop_transparent_border=True,
+            output_size=2048,
+        )
+
+    assert prepared.size == (2048, 2048)
+
+
 def test_jvb_logo_keeps_its_existing_transparency() -> None:
     """A transparent PNG must not go through the legacy photograph mask."""
     path = Path(__file__).parents[1] / "src" / "musicscope" / "assets" / "logo-jvb.png"
