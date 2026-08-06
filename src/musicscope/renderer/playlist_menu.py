@@ -66,7 +66,7 @@ class PlaylistMenuRenderer:
             data=bytes(self._TEXTURE_SIZE[0] * self._TEXTURE_SIZE[1] * 4),
         )
         self._texture.filter = (moderngl.LINEAR, moderngl.LINEAR)
-        self._content: tuple[tuple[str, ...], int | None, int | None] | None = None
+        self._content: tuple[tuple[tuple[int, str], ...], int | None, int | None] | None = None
 
     def render(
         self,
@@ -75,11 +75,12 @@ class PlaylistMenuRenderer:
         current_index: int | None,
         dragging_index: int | None,
         max_visible_tracks: int,
+        offset: int,
     ) -> None:
         """Draw the panel and its first visible playlist rows."""
         if not visible:
             return
-        entries = self._entries(playlist, max_visible_tracks)
+        entries = self._entries(playlist, max_visible_tracks, offset)
         content = (entries, current_index, dragging_index)
         if content != self._content:
             bitmap = self._image(*content).transpose(Image.Transpose.FLIP_TOP_BOTTOM)
@@ -95,7 +96,7 @@ class PlaylistMenuRenderer:
 
     def _image(
         self,
-        entries: tuple[str, ...],
+        entries: tuple[tuple[int, str], ...],
         current_index: int | None,
         dragging_index: int | None,
     ) -> Image.Image:
@@ -107,7 +108,7 @@ class PlaylistMenuRenderer:
         draw.text((40, 28), "PLAYLIST", fill=(75, 255, 145, 255), font=self._font(34))
         draw.text(
             (40, 78),
-            "P CLOSE  •  CLICK TO PLAY  •  DRAG TO REORDER",
+            "P CLOSE  •  CLICK PLAY  •  DRAG REORDER  •  UP/DOWN SCROLL",
             fill=(45, 190, 100, 230),
             font=self._font(18),
         )
@@ -118,8 +119,8 @@ class PlaylistMenuRenderer:
                 fill=(45, 190, 100, 255),
                 font=self._font(22),
             )
-        for index, entry in enumerate(entries, start=1):
-            top = 170 + (index - 1) * 61
+        for row, (index, entry) in enumerate(entries):
+            top = 170 + row * 61
             selected = index == current_index
             dragging = index == dragging_index
             if selected or dragging:
@@ -143,14 +144,18 @@ class PlaylistMenuRenderer:
         return image
 
     @staticmethod
-    def _entries(playlist: LocalPlaylist, maximum: int) -> tuple[str, ...]:
-        entries: list[str] = []
-        for index in range(1, min(playlist.size, maximum) + 1):
+    def _entries(
+        playlist: LocalPlaylist,
+        maximum: int,
+        offset: int,
+    ) -> tuple[tuple[int, str], ...]:
+        entries: list[tuple[int, str]] = []
+        for index in range(offset + 1, min(playlist.size, offset + maximum) + 1):
             track = playlist.track_at(index)
             if track is None:
                 continue
             entry = f"{index:02d}  {track.artist} — {track.title}"
-            entries.append(entry[:48])
+            entries.append((index, entry[:48]))
         return tuple(entries)
 
     @staticmethod

@@ -507,6 +507,7 @@ class MusicScopeApp:
                     if playlist_menu.visible:
                         handle_playlist_mouse(mouse_event)
                 keys = window.consume_pressed_keys()
+                playlist_navigation_keys: list[KeyPress] = []
                 for press in keys:
                     if press.key == glfw.KEY_SPACE:
                         playback_progress_visible = not playback_progress_visible
@@ -519,8 +520,17 @@ class MusicScopeApp:
                         self._logger.info(
                             "Playlist menu %s.", "opened" if playlist_menu.visible else "closed"
                         )
+                    if playlist_menu.visible and press.key == glfw.KEY_UP:
+                        playlist_menu.scroll(-1, local_playlist.size)
+                        playlist_navigation_keys.append(press)
+                    if playlist_menu.visible and press.key == glfw.KEY_DOWN:
+                        playlist_menu.scroll(1, local_playlist.size)
+                        playlist_navigation_keys.append(press)
+                shortcut_keys = tuple(
+                    press for press in keys if press not in playlist_navigation_keys
+                )
                 self._handle_shortcuts(
-                    keys,
+                    shortcut_keys,
                     oscillation_menu,
                     on_eject=cd_ejector.eject,
                     on_stop_cd=cd_player.stop if cd_player is not None else None,
@@ -559,6 +569,7 @@ class MusicScopeApp:
                     else None,
                     dragging_playlist_index,
                     playlist_menu.max_visible_tracks,
+                    playlist_menu.offset,
                 )
                 window.present()
         finally:

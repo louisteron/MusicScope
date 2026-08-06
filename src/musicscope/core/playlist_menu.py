@@ -25,6 +25,7 @@ class PlaylistMenu:
 
     def __init__(self) -> None:
         self._visible = False
+        self._offset = 0
 
     @property
     def visible(self) -> bool:
@@ -36,9 +37,19 @@ class PlaylistMenu:
         """Return how many playlist rows fit in the side panel."""
         return self._MAX_VISIBLE_TRACKS
 
+    @property
+    def offset(self) -> int:
+        """Return the zero-based position of the first visible track."""
+        return self._offset
+
     def toggle(self) -> None:
         """Show or hide the side panel."""
         self._visible = not self._visible
+
+    def scroll(self, direction: int, playlist_size: int) -> None:
+        """Move the visible playlist window one row up or down."""
+        maximum = max(0, playlist_size - self._MAX_VISIBLE_TRACKS)
+        self._offset = max(0, min(self._offset + direction, maximum))
 
     def action_at(
         self,
@@ -78,5 +89,5 @@ class PlaylistMenu:
         if not self._LEFT <= x <= self._RIGHT or y < self._ROWS_TOP:
             return None
         index = int((y - self._ROWS_TOP) / self._ROW_HEIGHT) + 1
-        maximum = min(playlist_size, self._MAX_VISIBLE_TRACKS)
-        return index if 1 <= index <= maximum else None
+        maximum = min(playlist_size - self._offset, self._MAX_VISIBLE_TRACKS)
+        return self._offset + index if 1 <= index <= maximum else None
