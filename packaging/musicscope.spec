@@ -1,17 +1,27 @@
 """Native PyInstaller build specification for MusicScope."""
 
 import sys
+from importlib.util import find_spec
 from pathlib import Path
 
 
 project_root = Path(SPECPATH).parent
 assets_directory = project_root / "src" / "musicscope" / "assets"
+glfw_package = Path(find_spec("glfw").origin).parent
+glfw_libraries = tuple(
+    library
+    for pattern in ("libglfw*.dylib", "libglfw*.so*", "glfw3.dll")
+    for library in glfw_package.glob(pattern)
+)
 
 analysis = Analysis(
     [str(project_root / "src" / "musicscope" / "__main__.py")],
     pathex=[str(project_root / "src")],
     binaries=[],
-    datas=[(str(assets_directory), "musicscope/assets")],
+    datas=[
+        (str(assets_directory), "musicscope/assets"),
+        *((str(library), "glfw") for library in glfw_libraries),
+    ],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
