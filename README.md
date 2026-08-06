@@ -6,9 +6,10 @@ un fond dont l'intensité réagit au niveau sonore.
 
 > **V0.1 alpha** — la playlist locale est prête aux essais sur macOS et Linux
 > avec `mpv`. Le mode CD dépend du lecteur, de `libdiscid` et de la plateforme.
-> Sous Windows, le visualiseur et la lecture locale sont expérimentaux : le
-> suivi automatique des pistes mpv et les paroles synchronisées ne sont pas
-> encore garantis.
+> Sous Windows, les playlists locales lisent l'audio avec `mpv` embarqué et le
+> visualiseur capture automatiquement les haut-parleurs via WASAPI. Le suivi
+> automatique de la piste suivante et le recalage après une pause restent
+> expérimentaux pour les paroles synchronisées.
 
 ## Démarrage
 

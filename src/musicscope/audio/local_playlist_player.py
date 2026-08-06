@@ -66,6 +66,11 @@ class LocalPlaylistPlayer:
             self._track_monitor.start()
         self._logger.info("Starting local playlist with %s track(s).", len(paths))
 
+    @property
+    def is_playing(self) -> bool:
+        """Whether the mpv process owned by this player is still running."""
+        return self._process is not None and self._process.poll() is None
+
     def stop(self) -> None:
         """Stop only the mpv process owned by this playlist player."""
         if self._track_monitor is not None:

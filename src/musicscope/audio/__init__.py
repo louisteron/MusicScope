@@ -13,6 +13,7 @@ from musicscope.audio.output import AudioOutput, AudioOutputDevice, AudioOutputD
 from musicscope.audio.output_settings import AudioOutputSettings
 from musicscope.audio.player_executable import resolve_mpv_executable
 from musicscope.audio.system_device import SystemAudioDevice, SystemAudioDeviceSelector
+from musicscope.audio.windows_loopback import WindowsLoopbackInput
 
 __all__ = [
     "AudioAnalyzer",
@@ -33,4 +34,5 @@ __all__ = [
     "AudioOutputSettings",
     "SystemAudioDevice",
     "SystemAudioDeviceSelector",
+    "WindowsLoopbackInput",
 ]

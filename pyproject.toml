@@ -4,7 +4,7 @@ build-backend="hatchling.build"
 
 [project]
 name="musicscope"
-version="0.1.0a4"
+version="0.1.0a5"
 description="An audio-reactive OpenGL visualiser for Raspberry Pi."
 readme="README.md"
 requires-python=">=3.13"
@@ -16,6 +16,7 @@ dependencies=[
     "numpy>=2.1.0",
     "Pillow>=11.0.0",
     "python-dotenv>=1.0.1",
+    "soundcard>=0.4.6",
     "sounddevice>=0.5.0",
 ]
 

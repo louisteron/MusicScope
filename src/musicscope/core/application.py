@@ -24,6 +24,7 @@ from musicscope.audio import (
     LocalPlaylist,
     LocalPlaylistPlayer,
     SystemAudioDeviceSelector,
+    WindowsLoopbackInput,
 )
 from musicscope.config import LOGO_NAMES, AppSettings, RecognitionMode
 from musicscope.config.environment import load_project_environment
@@ -79,7 +80,7 @@ class MusicScopeApp:
             self._settings.height,
             self._settings.fullscreen,
         )
-        audio_input: AudioInput | None = None
+        audio_input: AudioInput | WindowsLoopbackInput | None = None
         audio_output: AudioOutput | None = None
         recognition_service: RecognitionService | None = None
         cd_metadata_service: CdMetadataService | None = None
@@ -97,6 +98,7 @@ class MusicScopeApp:
         local_lyrics: tuple[tuple[float, str], ...] = ()
         local_lyrics_service: LyricsService | None = None
         local_current_path: Path | None = None
+        local_playback_started_at: float | None = None
         cd_ejector = CdEjector(device=self._settings.cd_device, logger=self._logger)
         capture_device = None
         try:
@@ -296,12 +298,32 @@ class MusicScopeApp:
             )
             playlist_menu = PlaylistMenu()
             started_at = time.monotonic()
+            def process_audio_block(samples: np.ndarray) -> None:
+                if recognition_service is not None:
+                    recognition_service.submit_samples(samples)
+                if audio_output is not None:
+                    audio_output.push(samples)
+
             if self._settings.enable_audio:
                 device = SystemAudioDeviceSelector().select(self._settings.audio_device)
                 if device is None:
-                    self._logger.warning(
-                        "No system-audio loopback device found; microphone capture is disabled."
-                    )
+                    if sys.platform == "win32":
+                        self._logger.info(
+                            "Capturing default Windows speaker through WASAPI loopback."
+                        )
+                        audio_input = WindowsLoopbackInput(
+                            analyzer=AudioAnalyzer(sample_rate=self._settings.sample_rate),
+                            on_frame=self._scene_manager.update_audio,
+                            sample_rate=self._settings.sample_rate,
+                            block_size=self._settings.block_size,
+                            on_samples=process_audio_block,
+                            logger=self._logger,
+                        )
+                        audio_input.start()
+                    else:
+                        self._logger.warning(
+                            "No system-audio loopback device found; microphone capture is disabled."
+                        )
                 else:
                     capture_device = device
                     self._logger.info("Capturing system audio from: %s", device.name)
@@ -310,12 +332,6 @@ class MusicScopeApp:
                         block_size=self._settings.block_size,
                         logger=self._logger,
                     )
-
-                    def process_audio_block(samples: np.ndarray) -> None:
-                        if recognition_service is not None:
-                            recognition_service.submit_samples(samples)
-                        if audio_output is not None:
-                            audio_output.push(samples)
 
                     audio_input = AudioInput(
                         analyzer=AudioAnalyzer(sample_rate=device.sample_rate),
@@ -331,7 +347,8 @@ class MusicScopeApp:
             select_recognition_mode(recognition_settings.mode)
 
             def update_local_track(number: int) -> None:
-                nonlocal local_current_path
+                nonlocal local_current_path, local_playback_started_at
+                local_playback_started_at = time.monotonic()
                 item = local_playlist.item_at(number)
                 if item is None:
                     return
@@ -406,13 +423,15 @@ class MusicScopeApp:
             dragging_playlist_index: int | None = None
 
             def play_local_playlist(start_at: int = 1) -> None:
+                nonlocal local_playback_started_at
                 if local_player is None or not local_playlist.paths:
                     return
                 local_player.play(local_playlist.paths, start_at=start_at)
+                local_playback_started_at = time.monotonic()
                 update_local_track(start_at)
 
             def clear_local_playlist() -> None:
-                nonlocal local_current_path
+                nonlocal local_current_path, local_playback_started_at
                 had_tracks = local_playlist.size > 0
                 if local_player is not None:
                     local_player.stop()
@@ -422,6 +441,7 @@ class MusicScopeApp:
                     local_lyrics_service.cancel()
                 local_playlist.clear()
                 local_current_path = None
+                local_playback_started_at = None
                 if had_tracks:
                     self._scene_manager.clear_track()
                 self._logger.info("Local playlist cleared.")
@@ -545,6 +565,13 @@ class MusicScopeApp:
                         )
                         if not cd_player.seek_to_fraction(fraction):
                             self._logger.warning("CD seeking is not ready yet.")
+                if (
+                    sys.platform == "win32"
+                    and local_player is not None
+                    and local_player.is_playing
+                    and local_playback_started_at is not None
+                ):
+                    update_local_lyric_time(time.monotonic() - local_playback_started_at)
                 state = self._scene_manager.state
                 width, height = window.framebuffer_size
                 context.viewport = (0, 0, width, height)
