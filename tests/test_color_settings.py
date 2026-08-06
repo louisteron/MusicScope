@@ -32,3 +32,9 @@ def test_environment_palette_changes_the_global_phosphor_color() -> None:
 
     assert colors.phosphor_color is PhosphorColor.WHITE
     assert colors.theme_color == (0.92, 1.0, 0.96)
+
+
+def test_environment_palette_exposes_neon_red_pink_and_yellow() -> None:
+    assert ColorSettings(phosphor_color=PhosphorColor.RED).theme_color == (1.0, 0.08, 0.12)
+    assert ColorSettings(phosphor_color=PhosphorColor.PINK).theme_color == (1.0, 0.12, 0.62)
+    assert ColorSettings(phosphor_color=PhosphorColor.YELLOW).theme_color == (1.0, 0.84, 0.08)

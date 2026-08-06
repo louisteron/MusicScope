@@ -20,6 +20,9 @@ class PhosphorColor(StrEnum):
     AMBER = "AMBER"
     BLUE = "BLUE"
     VIOLET = "VIOLET"
+    RED = "NEON RED"
+    PINK = "NEON PINK"
+    YELLOW = "NEON YELLOW"
 
 
 @dataclass(slots=True)
@@ -53,4 +56,7 @@ class ColorSettings:
             PhosphorColor.AMBER: (1.0, 0.58, 0.10),
             PhosphorColor.BLUE: (0.18, 0.60, 1.0),
             PhosphorColor.VIOLET: (0.70, 0.32, 1.0),
+            PhosphorColor.RED: (1.0, 0.08, 0.12),
+            PhosphorColor.PINK: (1.0, 0.12, 0.62),
+            PhosphorColor.YELLOW: (1.0, 0.84, 0.08),
         }[self.phosphor_color]
