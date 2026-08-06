@@ -42,6 +42,9 @@ et `libdiscid`.
 Sous Windows, le visualiseur est utilisable ; la lecture locale et le suivi des
 pistes restent expérimentaux dans cette alpha.
 
+Les builds natifs utilisent le logo MusicScope comme icône de l'application
+dans Finder, l'explorateur Windows et les raccourcis du système.
+
 Sur macOS, ouvre `MusicScope.app` après l'avoir déplacée hors du dossier
 Téléchargements. Les builds alpha ne sont pas encore signés avec un certificat
 Apple Developer : si macOS les bloque, utilise clic droit sur l'application,

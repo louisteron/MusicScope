@@ -13,6 +13,10 @@ glfw_libraries = tuple(
     for pattern in ("libglfw*.dylib", "libglfw*.so*", "glfw3.dll")
     for library in glfw_package.glob(pattern)
 )
+icon_file = {
+    "darwin": project_root / "packaging" / "musicscope.icns",
+    "win32": project_root / "packaging" / "musicscope.ico",
+}.get(sys.platform)
 
 analysis = Analysis(
     [str(project_root / "src" / "musicscope" / "__main__.py")],
@@ -41,6 +45,7 @@ executable = EXE(
     strip=False,
     upx=False,
     console=False,
+    icon=str(icon_file) if icon_file is not None else None,
 )
 
 if sys.platform == "darwin":
@@ -50,7 +55,7 @@ if sys.platform == "darwin":
         analysis.zipfiles,
         analysis.datas,
         name="MusicScope.app",
-        icon=None,
+        icon=str(icon_file) if icon_file is not None else None,
         bundle_identifier="io.musicscope.app",
     )
 else:

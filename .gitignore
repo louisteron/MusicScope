@@ -27,5 +27,8 @@ build/
 dist/
 *.egg-info/
 
+# Local macOS icon conversion staging
+packaging/*.iconset/
+
 # VS Code
 .vscode/
