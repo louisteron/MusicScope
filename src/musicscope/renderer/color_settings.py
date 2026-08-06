@@ -20,9 +20,9 @@ class PhosphorColor(StrEnum):
     AMBER = "AMBER"
     BLUE = "BLUE"
     VIOLET = "VIOLET"
-    RED = "NEON RED"
-    PINK = "NEON PINK"
-    YELLOW = "NEON YELLOW"
+    RED = "RED"
+    PINK = "PINK"
+    YELLOW = "YELLOW"
 
 
 @dataclass(slots=True)

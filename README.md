@@ -85,8 +85,8 @@ claviers AZERTY macOS, la touche physique `M` est également prise en charge.
 Utilise `↑` et `↓` pour sélectionner l'amplitude, l'épaisseur, la réactivité,
 le mode couleur, la palette `PHOSPHOR`, `TRACK NO.`, ou la sortie audio, puis
 `←` et `→` pour modifier la valeur en temps réel. `PHOSPHOR` propose vert,
-blanc, ambre, bleu, violet, rouge néon, rose néon et jaune néon pour tout
-l'environnement oscilloscope.
+blanc, ambre, bleu, violet, rouge, rose et jaune pour tout l'environnement
+oscilloscope.
 `TRACK NO.` affiche ou masque le numéro de piste quand il est disponible,
 notamment avec un CD local.
 Appuie de nouveau sur `M` pour le fermer.
