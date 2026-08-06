@@ -77,14 +77,18 @@ class ArtworkRenderer:
             float vertical_edge = abs(luminance(lower.rgb) - luminance(upper.rgb));
             float contrast_edge = max(horizontal_edge, vertical_edge);
             float alpha_edge = max(abs(left.a - right.a), abs(lower.a - upper.a));
-            float trace = smoothstep(0.035, 0.19, max(contrast_edge, alpha_edge));
+            float edge_strength = max(contrast_edge, alpha_edge);
+            float edge_softness = max(fwidth(edge_strength) * 1.8, 0.007);
+            float trace = smoothstep(0.035 - edge_softness, 0.19 + edge_softness, edge_strength);
+            float aura = smoothstep(0.006 - edge_softness, 0.105 + edge_softness, edge_strength);
             if (u_background == 1) {
                 if (trace < 0.02) discard;
                 vec3 neon = u_theme_color;
                 if (u_color_mode == 1) {
                     neon = mix(max(sampled_color, vec3(0.10)), vec3(1.0), 0.22);
                 }
-                fragment_color = vec4(neon * (0.22 + trace * 0.40), trace * 0.62);
+                fragment_color = vec4(neon * (0.15 + aura * 0.20 + trace * 0.42),
+                    aura * 0.16 + trace * 0.54);
                 return;
             }
             if (trace < 0.02) discard;
@@ -94,8 +98,8 @@ class ArtworkRenderer:
                 phosphor = mix(max(sampled_color, vec3(0.10)), vec3(1.0), 0.22)
                     * (0.72 + brightness * 0.28);
             }
-            phosphor *= 0.72 + trace * 0.28;
-            fragment_color = vec4(phosphor, trace * 0.94);
+            phosphor *= 0.58 + aura * 0.18 + trace * 0.32;
+            fragment_color = vec4(phosphor, aura * 0.20 + trace * 0.82);
         }
     """
 

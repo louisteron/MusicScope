@@ -48,6 +48,7 @@ class GlfwWindow:
         glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 3)
         glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
         glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
+        glfw.window_hint(glfw.SAMPLES, 4)
         monitor = glfw.get_primary_monitor() if self._fullscreen else None
         self._window = glfw.create_window(self._width, self._height, self._title, monitor, None)
         if self._window is None:
