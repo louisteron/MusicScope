@@ -4,14 +4,40 @@ MusicScope transforme un Raspberry Pi (ou un ordinateur) en visualiseur musical
 temps réel. La V0.1 ouvre une fenêtre OpenGL, capture l'entrée audio et affiche
 un fond dont l'intensité réagit au niveau sonore.
 
+> **V0.1 alpha** — la playlist locale est prête aux essais sur macOS et Linux
+> avec `mpv`. Le mode CD dépend du lecteur, de `libdiscid` et de la plateforme.
+> Sous Windows, le visualiseur et la lecture locale sont expérimentaux : le
+> suivi automatique des pistes mpv et les paroles synchronisées ne sont pas
+> encore garantis.
+
 ## Démarrage
 
 Python 3.13 est requis.
 
 ```bash
-uv sync --group dev
+uv sync --extra dev
 uv run musicscope
 ```
+
+Pour créer un exécutable natif, installe les dépendances de release puis lance
+PyInstaller sur **chaque OS cible** :
+
+```bash
+uv sync --extra release
+uv run pyinstaller --noconfirm --clean packaging/musicscope.spec
+```
+
+Les builds automatisés et la checklist de publication sont documentés dans
+[`RELEASE.md`](RELEASE.md).
+
+### Prérequis des builds alpha
+
+Les archives de release incluent MusicScope mais pas le lecteur audio externe
+`mpv`. Pour écouter une playlist locale ou un CD, installe `mpv` sur la machine
+du testeur (`brew install mpv` sur macOS, `sudo apt install mpv` sur Debian et
+Ubuntu). Le mode CD nécessite en plus un lecteur CD audio et `libdiscid`.
+Sous Windows, le visualiseur est utilisable ; la lecture locale et le suivi des
+pistes restent expérimentaux dans cette alpha.
 
 Le mode silencieux, utile sans entrée audio ou pour les démonstrations, est
 disponible avec `musicscope --no-audio`.
@@ -124,6 +150,8 @@ Au démarrage, `✓ AudD provider loaded` confirme l'activation. Sans jeton,
 MusicScope affiche `⚠ AudD disabled (missing API token)` et le visualiseur
 continue sans reconnaissance. ACRCloud reste présent dans le code comme ancien
 fournisseur, mais n'est plus configuré ni utilisé.
+
+MusicScope est distribué sous licence [MIT](LICENSE).
 
 ## Mode CD local (sans AudD)
 

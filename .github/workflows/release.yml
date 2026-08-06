@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    name: Package · ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macos-arm64
+            os: macos-14
+            source: dist/MusicScope.app
+          - name: linux-x86_64
+            os: ubuntu-24.04
+            source: dist/MusicScope
+          - name: windows-x86_64
+            os: windows-2022
+            source: dist/MusicScope
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+      - run: uv sync --extra release
+      - run: uv run pyinstaller --noconfirm --clean packaging/musicscope.spec
+      - run: >
+          uv run python packaging/archive.py
+          ${{ matrix.source }}
+          dist/MusicScope-${{ matrix.name }}.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MusicScope-${{ matrix.name }}
+          path: dist/MusicScope-${{ matrix.name }}.zip
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub release
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release
+      - uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          generate_release_notes: true
+          files: release/**/*.zip
