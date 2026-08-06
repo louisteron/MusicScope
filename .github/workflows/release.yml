@@ -30,6 +30,9 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.13"
+      - name: Install Linux audio runtime
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install --yes libportaudio2
       - run: uv sync --extra release
       - run: uv run pyinstaller --noconfirm --clean packaging/musicscope.spec
       - run: >
