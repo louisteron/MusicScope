@@ -25,3 +25,7 @@ one native ZIP archive per operating system and publishes a GitHub prerelease:
 
 Each artifact is built on its own target OS; do not reuse a macOS build on
 Windows or Linux.
+
+The Windows archive embeds the upstream [mpv Windows build](https://github.com/
+shinchiro/mpv-winbuild-cmake) and its accompanying files. Keep these files in
+the `mpv/` directory when redistributing the archive.

@@ -41,6 +41,31 @@ jobs:
       - name: Verify the macOS application signature
         if: runner.os == 'macOS'
         run: codesign --verify --deep --strict --verbose=2 dist/MusicScope.app
+      - name: Bundle mpv runtime on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $release = Invoke-RestMethod `
+            https://api.github.com/repos/shinchiro/mpv-winbuild-cmake/releases/latest
+          $asset = $release.assets |
+            Where-Object { $_.name -match '^mpv-x86_64-v3-.*\.7z$' } |
+            Select-Object -First 1
+          if ($null -eq $asset) {
+            throw 'No x86_64 mpv archive was found in the upstream release.'
+          }
+          $archive = Join-Path $env:RUNNER_TEMP 'musicscope-mpv.7z'
+          $extractDirectory = Join-Path $env:RUNNER_TEMP 'musicscope-mpv'
+          Invoke-WebRequest $asset.browser_download_url -OutFile $archive
+          7z x $archive "-o$extractDirectory" -y
+          $mpv = Get-ChildItem $extractDirectory -Filter mpv.exe -Recurse |
+            Select-Object -First 1
+          if ($null -eq $mpv) {
+            throw 'mpv.exe was not found after extracting the upstream archive.'
+          }
+          $destination = Join-Path $PWD 'dist/MusicScope/mpv'
+          New-Item -ItemType Directory -Force $destination | Out-Null
+          Copy-Item "$($mpv.Directory.FullName)/*" $destination -Recurse -Force
       - run: >
           uv run python packaging/archive.py
           ${{ matrix.source }}

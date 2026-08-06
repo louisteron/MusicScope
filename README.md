@@ -35,7 +35,9 @@ Les builds automatisés et la checklist de publication sont documentés dans
 Les archives de release incluent MusicScope mais pas le lecteur audio externe
 `mpv`. Pour écouter une playlist locale ou un CD, installe `mpv` sur la machine
 du testeur (`brew install mpv` sur macOS, `sudo apt install mpv` sur Debian et
-Ubuntu). Le mode CD nécessite en plus un lecteur CD audio et `libdiscid`.
+Ubuntu). L'archive Windows inclut désormais `mpv` pour lire les playlists sans
+installation supplémentaire. Le mode CD nécessite en plus un lecteur CD audio
+et `libdiscid`.
 Sous Windows, le visualiseur est utilisable ; la lecture locale et le suivi des
 pistes restent expérimentaux dans cette alpha.
 

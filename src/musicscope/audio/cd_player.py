@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Protocol
 
 from musicscope.audio.mpv_track_monitor import MpvTrackMonitor
+from musicscope.audio.player_executable import resolve_mpv_executable
 
 
 class Process(Protocol):
@@ -34,7 +35,7 @@ class CdPlayer:
         self,
         device: str | None = None,
         audio_device: str | None = None,
-        executable: str = "mpv",
+        executable: str | None = None,
         start_process: ProcessStarter = subprocess.Popen,
         mounted_tracks: MountedTracks | None = None,
         audio_device_resolver: AudioDeviceResolver | None = None,
@@ -45,7 +46,7 @@ class CdPlayer:
     ) -> None:
         self._device = device
         self._audio_device = audio_device
-        self._executable = executable
+        self._executable = executable or resolve_mpv_executable()
         self._start_process = start_process
         self._mounted_tracks = mounted_tracks or self._macos_mounted_tracks
         self._audio_device_resolver = audio_device_resolver or self._resolve_mpv_audio_device

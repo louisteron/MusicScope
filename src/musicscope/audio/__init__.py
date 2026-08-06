@@ -11,6 +11,7 @@ from musicscope.audio.local_playlist_player import LocalPlaylistPlayer
 from musicscope.audio.mpv_track_monitor import MpvTrackMonitor
 from musicscope.audio.output import AudioOutput, AudioOutputDevice, AudioOutputDeviceSelector
 from musicscope.audio.output_settings import AudioOutputSettings
+from musicscope.audio.player_executable import resolve_mpv_executable
 from musicscope.audio.system_device import SystemAudioDevice, SystemAudioDeviceSelector
 
 __all__ = [
@@ -25,6 +26,7 @@ __all__ = [
     "LocalPlaylist",
     "LocalPlaylistPlayer",
     "MpvTrackMonitor",
+    "resolve_mpv_executable",
     "AudioOutput",
     "AudioOutputDevice",
     "AudioOutputDeviceSelector",

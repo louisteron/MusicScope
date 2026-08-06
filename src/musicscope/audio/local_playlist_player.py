@@ -7,6 +7,7 @@ from pathlib import Path
 
 from musicscope.audio.cd_player import AudioDeviceResolver, Process, ProcessStarter
 from musicscope.audio.mpv_track_monitor import MpvTrackMonitor
+from musicscope.audio.player_executable import resolve_mpv_executable
 
 
 class LocalPlaylistPlayer:
@@ -15,7 +16,7 @@ class LocalPlaylistPlayer:
     def __init__(
         self,
         audio_device: str | None = None,
-        executable: str = "mpv",
+        executable: str | None = None,
         start_process: ProcessStarter = subprocess.Popen,
         audio_device_resolver: AudioDeviceResolver | None = None,
         on_track_change: Callable[[int], None] | None = None,
@@ -24,7 +25,7 @@ class LocalPlaylistPlayer:
         logger: logging.Logger | None = None,
     ) -> None:
         self._audio_device = audio_device
-        self._executable = executable
+        self._executable = executable or resolve_mpv_executable()
         self._start_process = start_process
         self._audio_device_resolver = audio_device_resolver
         self._on_track_change = on_track_change
