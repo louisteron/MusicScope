@@ -15,7 +15,7 @@ class ArtworkRenderer:
     """Render a fixed foreground artwork mark with a phosphor edge treatment."""
 
     _LOGO_FILENAMES = {
-        "frog": "frog.jpg",
+        "musicscope": "musicscope-logo.png",
     }
 
     _VERTEX_SHADER = """
@@ -102,7 +102,7 @@ class ArtworkRenderer:
     def __init__(
         self,
         context: moderngl.Context,
-        logo: str = "frog",
+        logo: str = "musicscope",
         subdivisions: int = 24,
         color_settings: ColorSettings | None = None,
         track_info_settings: TrackInfoSettings | None = None,
@@ -167,11 +167,12 @@ class ArtworkRenderer:
 
     def _load_texture(self, artwork_path: Path) -> None:
         with Image.open(artwork_path) as image:
-            # The frog is a photograph requiring background removal. The PNG
-            # marks already contain their intended alpha channel.
+            # Legacy raster marks can require isolation. The MusicScope logo
+            # already contains transparency and is cropped to its visible art.
             rgba = self._prepare_image(
                 image,
                 isolate_foreground=artwork_path.name == "frog.jpg",
+                crop_transparent_border=artwork_path == self._logo_path,
                 crop_to_square=artwork_path != self._logo_path,
             )
             if artwork_path != self._logo_path:

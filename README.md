@@ -74,10 +74,10 @@ Appuyez sur `P` pour afficher le panneau **PLAYLIST** à droite. Cliquez sur une
 
 ## Logos réactifs
 
-Le visuel central par défaut est la grenouille, dont les contours réagissent à la musique :
+Le visuel central par défaut est le logo MusicScope, dont les contours réagissent à la musique :
 
 ```bash
-musicscope --logo frog
+musicscope --logo musicscope
 ```
 
 Appuie sur `M` (ou `F1`) pour ouvrir le menu **OSCILLATION**. Sur certains

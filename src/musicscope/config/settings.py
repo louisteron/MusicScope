@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
-LOGO_NAMES = ("frog",)
+LOGO_NAMES = ("musicscope",)
 
 
 class RecognitionMode(StrEnum):
@@ -26,7 +26,7 @@ class AppSettings:
     audio_device: str | None = None
     cd_device: str | None = None
     recognition_mode: RecognitionMode = RecognitionMode.LOCAL_CD
-    logo: str = "frog"
+    logo: str = "musicscope"
     sample_rate: int = 44_100
     block_size: int = 1_024
     target_fps: int = 60

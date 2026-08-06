@@ -21,8 +21,8 @@ def test_settings_reject_an_unknown_logo() -> None:
         AppSettings(logo="unknown")
 
 
-def test_settings_accepts_the_frog_visual() -> None:
-    assert AppSettings(logo="frog").logo == "frog"
+def test_settings_accepts_the_musicscope_visual() -> None:
+    assert AppSettings(logo="musicscope").logo == "musicscope"
 
 
 def test_settings_supports_local_cd_metadata_mode() -> None:

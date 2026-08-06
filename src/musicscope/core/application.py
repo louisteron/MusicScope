@@ -692,7 +692,7 @@ def main() -> None:
         "--audio-device",
         help="name of the virtual system-audio input device (for example BlackHole)",
     )
-    parser.add_argument("--logo", choices=LOGO_NAMES, default="frog")
+    parser.add_argument("--logo", choices=LOGO_NAMES, default="musicscope")
     parser.add_argument(
         "--recognition-mode",
         choices=tuple(RecognitionMode),

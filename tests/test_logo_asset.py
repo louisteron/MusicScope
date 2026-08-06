@@ -1,4 +1,4 @@
-"""Tests for the bundled reactive frog logo."""
+"""Tests for bundled reactive visual assets."""
 
 from pathlib import Path
 
@@ -8,16 +8,20 @@ from PIL import Image
 from musicscope.renderer.artwork import ArtworkRenderer
 
 
-def test_frog_logo_is_packaged_and_its_background_is_removed() -> None:
-    path = Path(__file__).parents[1] / "src" / "musicscope" / "assets" / "frog.jpg"
+def test_musicscope_logo_is_packaged_and_cropped_to_its_visible_art() -> None:
+    path = Path(__file__).parents[1] / "src" / "musicscope" / "assets" / "musicscope-logo.png"
     with Image.open(path) as image:
-        prepared = ArtworkRenderer._prepare_image(image, isolate_foreground=True)
+        prepared = ArtworkRenderer._prepare_image(
+            image,
+            isolate_foreground=False,
+            crop_transparent_border=True,
+        )
     assert prepared.size == (512, 512)
     assert prepared.getchannel("A").getextrema()[0] == 0
 
 
 def test_jvb_logo_keeps_its_existing_transparency() -> None:
-    """A transparent PNG must not go through the frog photograph mask."""
+    """A transparent PNG must not go through the legacy photograph mask."""
     path = Path(__file__).parents[1] / "src" / "musicscope" / "assets" / "logo-jvb.png"
     with Image.open(path) as image:
         prepared = ArtworkRenderer._prepare_image(image, isolate_foreground=False)

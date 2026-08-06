@@ -34,7 +34,7 @@ musicscope="musicscope.__main__:main"
 packages=["src/musicscope"]
 
 [tool.hatch.build.targets.wheel.force-include]
-"src/musicscope/assets/frog.jpg" = "musicscope/assets/frog.jpg"
+"src/musicscope/assets/musicscope-logo.png" = "musicscope/assets/musicscope-logo.png"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
