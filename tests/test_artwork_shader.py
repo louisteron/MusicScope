@@ -9,11 +9,13 @@ def test_artwork_shader_uses_contrast_and_alpha_edges() -> None:
     assert "u_texel_size" in shader
     assert "contrast_edge" in shader
     assert "alpha_edge" in shader
-    assert "if (trace < 0.02) discard" in shader
+    assert "if (trace < 0.02 && logo_fill < 0.01) discard" in shader
     assert "bass_warp" in shader
     assert "shockwave" in shader
     assert "u_color_mode" in shader
     assert "u_theme_color" in shader
+    assert "u_logo" in shader
+    assert "logo_fill" in shader
 
 
 def test_artwork_shader_compensates_for_window_aspect_ratio() -> None:

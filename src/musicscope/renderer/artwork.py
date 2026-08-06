@@ -43,6 +43,7 @@ class ArtworkRenderer:
         uniform vec3 u_theme_color;
         uniform int u_color_mode;
         uniform int u_background;
+        uniform int u_logo;
         uniform float u_aspect_ratio;
         in vec2 uv;
         out vec4 fragment_color;
@@ -66,7 +67,10 @@ class ArtworkRenderer:
             float shockwave = sin(distance * 76.0 - u_time * 16.0) * u_bass * 0.0035;
             vec2 bass_warp = direction * shockwave;
             vec2 sample_uv = clamp(artwork_uv + bass_warp, vec2(0.001), vec2(0.999));
-            vec3 sampled_color = texture(u_artwork, sample_uv).rgb;
+            vec4 sampled = texture(u_artwork, sample_uv);
+            vec3 sampled_color = sampled.rgb;
+            float logo_fill = float(u_logo) * sampled.a
+                * smoothstep(0.25, 0.72, luminance(sampled_color));
             vec2 x_offset = vec2(u_texel_size.x, 0.0);
             vec2 y_offset = vec2(0.0, u_texel_size.y);
             vec4 left = texture(u_artwork, sample_uv - x_offset);
@@ -82,24 +86,24 @@ class ArtworkRenderer:
             float trace = smoothstep(0.035 - edge_softness, 0.19 + edge_softness, edge_strength);
             float aura = smoothstep(0.006 - edge_softness, 0.105 + edge_softness, edge_strength);
             if (u_background == 1) {
-                if (trace < 0.02) discard;
+                if (trace < 0.02 && logo_fill < 0.01) discard;
                 vec3 neon = u_theme_color;
                 if (u_color_mode == 1) {
                     neon = mix(max(sampled_color, vec3(0.10)), vec3(1.0), 0.22);
                 }
-                fragment_color = vec4(neon * (0.15 + aura * 0.20 + trace * 0.42),
-                    aura * 0.16 + trace * 0.54);
+                fragment_color = vec4(neon * (0.15 + aura * 0.20 + trace * 0.42 + logo_fill * 0.14),
+                    aura * 0.16 + trace * 0.54 + logo_fill * 0.26);
                 return;
             }
-            if (trace < 0.02) discard;
+            if (trace < 0.02 && logo_fill < 0.01) discard;
             vec3 phosphor = u_theme_color;
             if (u_color_mode == 1) {
                 float brightness = max(luminance(sampled_color), 0.25);
                 phosphor = mix(max(sampled_color, vec3(0.10)), vec3(1.0), 0.22)
                     * (0.72 + brightness * 0.28);
             }
-            phosphor *= 0.58 + aura * 0.18 + trace * 0.32;
-            fragment_color = vec4(phosphor, aura * 0.20 + trace * 0.82);
+            phosphor *= 0.58 + aura * 0.18 + trace * 0.32 + logo_fill * 0.18;
+            fragment_color = vec4(phosphor, aura * 0.20 + trace * 0.82 + logo_fill * 0.52);
         }
     """
 
@@ -147,6 +151,7 @@ class ArtworkRenderer:
         # fetched; the bundled mark is replaced on the next rendered frame
         # after the real cover reaches the scene.
         self._program["u_background"].value = int(self._track_info_settings.lyrics_wave)
+        self._program["u_logo"].value = int(artwork_path == self._logo_path)
         self._program["u_texel_size"].value = (
             1.0 / self._texture.width,
             1.0 / self._texture.height,
