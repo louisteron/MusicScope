@@ -35,6 +35,12 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --yes libportaudio2
       - run: uv sync --extra release
       - run: uv run pyinstaller --noconfirm --clean packaging/musicscope.spec
+      - name: Ad-hoc sign the macOS application
+        if: runner.os == 'macOS'
+        run: codesign --force --deep --sign - --timestamp=none dist/MusicScope.app
+      - name: Verify the macOS application signature
+        if: runner.os == 'macOS'
+        run: codesign --verify --deep --strict --verbose=2 dist/MusicScope.app
       - run: >
           uv run python packaging/archive.py
           ${{ matrix.source }}

@@ -39,6 +39,11 @@ Ubuntu). Le mode CD nécessite en plus un lecteur CD audio et `libdiscid`.
 Sous Windows, le visualiseur est utilisable ; la lecture locale et le suivi des
 pistes restent expérimentaux dans cette alpha.
 
+Sur macOS, ouvre `MusicScope.app` après l'avoir déplacée hors du dossier
+Téléchargements. Les builds alpha ne sont pas encore signés avec un certificat
+Apple Developer : si macOS les bloque, utilise clic droit sur l'application,
+puis **Ouvrir** et confirme l'ouverture.
+
 Le mode silencieux, utile sans entrée audio ou pour les démonstrations, est
 disponible avec `musicscope --no-audio`.
 
