@@ -438,6 +438,7 @@ class MusicScopeApp:
             )
             dragging_playlist_index: int | None = None
             dragging_playback = False
+            last_playback_seek_at = 0.0
 
             def play_local_playlist(start_at: int = 1) -> None:
                 nonlocal local_playback_started_at
@@ -580,12 +581,18 @@ class MusicScopeApp:
                         cursor_x: float,
                         width: int = window_width,
                         height: int = window_height,
+                        force: bool = False,
                     ) -> None:
+                        nonlocal last_playback_seek_at
+                        now = time.monotonic()
+                        if not force and now - last_playback_seek_at < 0.10:
+                            return
                         fraction = PlaybackProgressRenderer.fraction_from_cursor(
                             cursor_x,
                             width,
                             width / height if height else 1.0,
                         )
+                        last_playback_seek_at = now
                         if local_player is not None and local_player.is_playing:
                             if not local_player.seek_to_fraction(fraction):
                                 self._logger.warning("Local playback seeking is not ready yet.")
@@ -595,9 +602,10 @@ class MusicScopeApp:
                     for mouse_event in mouse_events:
                         if mouse_event.action == glfw.PRESS:
                             dragging_playback = True
-                            seek_playback(mouse_event.x)
+                            seek_playback(mouse_event.x, force=True)
                         elif mouse_event.action == glfw.RELEASE:
                             dragging_playback = False
+                            seek_playback(mouse_event.x, force=True)
                     if dragging_playback:
                         cursor_x, _cursor_y = window.cursor_position
                         seek_playback(cursor_x)
