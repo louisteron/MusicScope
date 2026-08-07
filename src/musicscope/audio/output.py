@@ -11,6 +11,7 @@ import numpy as np
 import sounddevice as sd
 
 DeviceQuery = Callable[[], Sequence[Mapping[str, Any]]]
+DefaultDeviceQuery = Callable[[], Any]
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,8 +25,13 @@ class AudioOutputDevice:
 class AudioOutputDeviceSelector:
     """List playback devices without making platform-specific jack assumptions."""
 
-    def __init__(self, query_devices: DeviceQuery = sd.query_devices) -> None:
+    def __init__(
+        self,
+        query_devices: DeviceQuery = sd.query_devices,
+        default_device: DefaultDeviceQuery = lambda: sd.default.device,
+    ) -> None:
         self._query_devices = query_devices
+        self._default_device = default_device
 
     def available(self) -> tuple[AudioOutputDevice, ...]:
         """Return every usable output, including a connected headphone jack."""
@@ -36,6 +42,21 @@ class AudioOutputDeviceSelector:
             )
             for device in self._query_devices()
             if int(device["max_output_channels"]) > 0
+        )
+
+    def default_output(self) -> AudioOutputDevice | None:
+        """Return the operating system's selected playback endpoint, if usable."""
+        default_device = self._default_device()
+        try:
+            output_index = int(default_device[1])
+            device = self._query_devices()[output_index]
+        except (IndexError, KeyError, TypeError, ValueError):
+            return None
+        if int(device["max_output_channels"]) <= 0:
+            return None
+        return AudioOutputDevice(
+            name=str(device["name"]),
+            channels=min(2, int(device["max_output_channels"])),
         )
 
 

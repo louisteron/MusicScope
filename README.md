@@ -94,6 +94,15 @@ oscilloscope.
 notamment avec un CD local.
 Appuie de nouveau sur `M` pour le fermer.
 
+### AirPods et casques Bluetooth
+
+Avant de lancer une playlist locale ou un CD, sélectionne les AirPods comme
+sortie dans les réglages audio de macOS. MusicScope utilise désormais cette
+sortie système par défaut pour la lecture CD. Tu peux aussi ouvrir `M`, choisir
+`AUDIO OUTPUT`, puis sélectionner directement les AirPods avec `←` et `→`.
+Lorsque BlackHole est l'entrée du visualiseur, les AirPods restent la sortie
+d'écoute : ne sélectionne pas BlackHole comme `AUDIO OUTPUT`.
+
 Pour éjecter le CD sans quitter MusicScope, utilise `⌘E` sur macOS ou `Ctrl+E`
 sur Windows et Linux. La lecture est arrêtée avant l'éjection.
 

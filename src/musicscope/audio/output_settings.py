@@ -11,6 +11,7 @@ class AudioOutputSettings:
 
     devices: tuple[AudioOutputDevice, ...]
     selected_index: int = -1
+    default_device: AudioOutputDevice | None = None
 
     @property
     def selected_device(self) -> AudioOutputDevice | None:
@@ -52,3 +53,14 @@ class AudioOutputSettings:
             )
         self.selected_index = index if index is not None else -1
         return self.selected_device
+
+    def select_system_default(self) -> AudioOutputDevice | None:
+        """Select the system output first, then preserve the physical-output fallback."""
+        if self.default_device is not None:
+            try:
+                self.selected_index = self.devices.index(self.default_device)
+            except ValueError:
+                pass
+            else:
+                return self.selected_device
+        return self.select_speakers()

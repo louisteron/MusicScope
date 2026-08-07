@@ -129,7 +129,11 @@ class MusicScopeApp:
             playback_progress_renderer = PlaybackProgressRenderer(context, color_settings)
             settings_menu_renderer = SettingsMenuRenderer(context, color_settings=color_settings)
             playlist_menu_renderer = PlaylistMenuRenderer(context, color_settings=color_settings)
-            output_settings = AudioOutputSettings(AudioOutputDeviceSelector().available())
+            output_selector = AudioOutputDeviceSelector()
+            output_settings = AudioOutputSettings(
+                output_selector.available(),
+                default_device=output_selector.default_output(),
+            )
             recognition_settings = RecognitionSettings(self._settings.recognition_mode)
 
             def select_audio_output(device: AudioOutputDevice | None) -> None:
@@ -172,7 +176,7 @@ class MusicScopeApp:
                     return
                 if mode is RecognitionMode.LOCAL_CD:
                     recognition_settings.set_status("CD")
-                    speaker_output = output_settings.select_speakers()
+                    speaker_output = output_settings.select_system_default()
                     if speaker_output is not None:
                         select_audio_output(speaker_output)
                         self._logger.info("CD playback output selected: %s", speaker_output.name)
