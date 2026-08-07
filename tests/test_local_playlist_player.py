@@ -84,3 +84,15 @@ def test_local_playlist_player_enables_mpv_timing_for_lyrics(monkeypatch) -> Non
 
     assert len(monitors) == 1
     assert monitors[0].on_playback_time is not None
+
+
+def test_local_playlist_player_seeks_through_its_track_monitor() -> None:
+    player = LocalPlaylistPlayer()
+
+    class Monitor:
+        def seek_to_fraction(self, fraction: float) -> bool:
+            return fraction == 0.4
+
+    player._track_monitor = Monitor()  # type: ignore[assignment]
+
+    assert player.seek_to_fraction(0.4)

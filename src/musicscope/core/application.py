@@ -99,6 +99,8 @@ class MusicScopeApp:
         local_lyrics_service: LyricsService | None = None
         local_current_path: Path | None = None
         local_playback_started_at: float | None = None
+        local_position = 0.0
+        local_duration = 0.0
         cd_ejector = CdEjector(device=self._settings.cd_device, logger=self._logger)
         capture_device = None
         try:
@@ -352,7 +354,10 @@ class MusicScopeApp:
 
             def update_local_track(number: int) -> None:
                 nonlocal local_current_path, local_playback_started_at
+                nonlocal local_position, local_duration
                 local_playback_started_at = time.monotonic()
+                local_position = 0.0
+                local_duration = 0.0
                 item = local_playlist.item_at(number)
                 if item is None:
                     return
@@ -391,6 +396,8 @@ class MusicScopeApp:
                     self._scene_manager.mark_lyrics_unavailable()
 
             def update_local_lyric_time(seconds: float) -> None:
+                nonlocal local_position
+                local_position = seconds
                 display = display_at(
                     local_lyrics,
                     seconds,
@@ -401,6 +408,10 @@ class MusicScopeApp:
                     display.opacity,
                     display.morph,
                 )
+
+            def update_local_duration(seconds: float) -> None:
+                nonlocal local_duration
+                local_duration = seconds
 
             local_artwork_service = LocalArtworkService(
                 local_playlist,
@@ -422,9 +433,11 @@ class MusicScopeApp:
                 audio_device_resolver=CdPlayer()._resolve_mpv_audio_device,
                 on_track_change=update_local_track,
                 on_playback_time=update_local_lyric_time,
+                on_duration=update_local_duration,
                 logger=self._logger,
             )
             dragging_playlist_index: int | None = None
+            dragging_playback = False
 
             def play_local_playlist(start_at: int = 1) -> None:
                 nonlocal local_playback_started_at
@@ -527,7 +540,8 @@ class MusicScopeApp:
                             "No supported audio files were dropped. "
                             "Supported: MP3, M4A, FLAC, WAV, OGG, OPUS, AAC, AIFF."
                         )
-                for mouse_event in window.consume_mouse_button_events():
+                mouse_events = window.consume_mouse_button_events()
+                for mouse_event in mouse_events:
                     if playlist_menu.visible:
                         handle_playlist_mouse(mouse_event)
                 keys = window.consume_pressed_keys()
@@ -559,16 +573,34 @@ class MusicScopeApp:
                     on_eject=cd_ejector.eject,
                     on_stop_cd=cd_player.stop if cd_player is not None else None,
                 )
-                if playback_progress_visible and cd_player is not None:
+                if playback_progress_visible and not playlist_menu.visible:
                     window_width, window_height = window.window_size
-                    for cursor_x, _cursor_y in window.consume_mouse_presses():
+
+                    def seek_playback(
+                        cursor_x: float,
+                        width: int = window_width,
+                        height: int = window_height,
+                    ) -> None:
                         fraction = PlaybackProgressRenderer.fraction_from_cursor(
                             cursor_x,
-                            window_width,
-                            window_width / window_height if window_height else 1.0,
+                            width,
+                            width / height if height else 1.0,
                         )
-                        if not cd_player.seek_to_fraction(fraction):
+                        if local_player is not None and local_player.is_playing:
+                            if not local_player.seek_to_fraction(fraction):
+                                self._logger.warning("Local playback seeking is not ready yet.")
+                        elif cd_player is not None and not cd_player.seek_to_fraction(fraction):
                             self._logger.warning("CD seeking is not ready yet.")
+
+                    for mouse_event in mouse_events:
+                        if mouse_event.action == glfw.PRESS:
+                            dragging_playback = True
+                            seek_playback(mouse_event.x)
+                        elif mouse_event.action == glfw.RELEASE:
+                            dragging_playback = False
+                    if dragging_playback:
+                        cursor_x, _cursor_y = window.cursor_position
+                        seek_playback(cursor_x)
                 if (
                     sys.platform == "win32"
                     and local_player is not None
@@ -585,10 +617,11 @@ class MusicScopeApp:
                 artwork_renderer.render(state, elapsed)
                 track_info_renderer.render(state)
                 lyrics_renderer.render(state, elapsed)
+                is_local_playback = local_player is not None and local_player.is_playing
                 playback_progress_renderer.render(
                     playback_progress_visible,
-                    cd_position,
-                    cd_duration,
+                    local_position if is_local_playback else cd_position,
+                    local_duration if is_local_playback else cd_duration,
                 )
                 visual_lines, audio_lines = oscillation_menu.columns()
                 settings_menu_renderer.render(oscillation_menu.visible, visual_lines, audio_lines)

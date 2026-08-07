@@ -92,6 +92,7 @@ class GlfwWindow:
         """Return left-button press/release events for drag-based controls."""
         events = tuple(self._mouse_button_events)
         self._mouse_button_events.clear()
+        self._mouse_presses.clear()
         return events
 
     def consume_dropped_files(self) -> tuple[Path, ...]:
@@ -106,6 +107,13 @@ class GlfwWindow:
         if self._window is None:
             raise RuntimeError("Window is not open.")
         return glfw.get_window_size(self._window)
+
+    @property
+    def cursor_position(self) -> tuple[float, float]:
+        """Return the current logical cursor coordinates."""
+        if self._window is None:
+            raise RuntimeError("Window is not open.")
+        return glfw.get_cursor_pos(self._window)
 
     def present(self) -> None:
         """Swap front and back buffers."""

@@ -84,6 +84,12 @@ class LocalPlaylistPlayer:
         except subprocess.TimeoutExpired:
             self._process.kill()
 
+    def seek_to_fraction(self, fraction: float) -> bool:
+        """Move within the currently playing local track through mpv's IPC channel."""
+        if self._track_monitor is None:
+            return False
+        return self._track_monitor.seek_to_fraction(fraction)
+
     def _add_audio_device(self, command: list[str]) -> None:
         if self._audio_device is None or self._audio_device_resolver is None:
             return
