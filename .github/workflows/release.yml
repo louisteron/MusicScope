@@ -39,7 +39,10 @@ jobs:
           python-version: "3.13"
       - name: Install Linux audio runtime
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install --yes libportaudio2 libpulse0
+        run: >
+          sudo apt-get update && sudo apt-get install --yes
+          libportaudio2 libpulse0 libglfw3 libgl1 libx11-6 libxrandr2 libxi6
+          libxinerama1 libxcursor1
       - run: uv sync --extra release
       - run: uv run pyinstaller --noconfirm --clean packaging/musicscope.spec
       - name: Smoke test the frozen macOS app
