@@ -9,6 +9,7 @@ class BackgroundMode(StrEnum):
 
     CRT = "CRT"
     CAMERA = "CAMERA"
+    CAMERA_COVER = "CAMERA + COVER"
 
 
 @dataclass(slots=True)
@@ -21,7 +22,12 @@ class CameraSettings:
     @property
     def enabled(self) -> bool:
         """Whether the live camera should replace the CRT background."""
-        return self.mode is BackgroundMode.CAMERA
+        return self.mode in {BackgroundMode.CAMERA, BackgroundMode.CAMERA_COVER}
+
+    @property
+    def show_cover(self) -> bool:
+        """Whether artwork should remain visible over the live camera."""
+        return self.mode is BackgroundMode.CAMERA_COVER
 
     def cycle(self, direction: int) -> None:
         """Select the next or previous background."""

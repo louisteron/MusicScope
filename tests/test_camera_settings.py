@@ -13,6 +13,12 @@ def test_camera_background_setting_cycles_between_crt_and_camera() -> None:
 
     settings.cycle(1)
 
+    assert settings.mode is BackgroundMode.CAMERA_COVER
+    assert settings.enabled
+    assert settings.show_cover
+
+    settings.cycle(1)
+
     assert settings.mode is BackgroundMode.CRT
     assert not settings.enabled
 

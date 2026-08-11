@@ -99,6 +99,7 @@ Appuie de nouveau sur `M` pour le fermer.
 Dans le menu `M`, sélectionne `BACKGROUND`, puis choisis `CAMERA`. MusicScope
 demande l'autorisation d'utiliser la webcam et affiche son flux derrière les
 paroles et les oscillations ; la cover centrale est masquée dans ce mode.
+Choisis `CAMERA + COVER` pour garder la cover centrale par-dessus la caméra.
 Utilise `CAMERA INPUT` pour choisir la source vidéo. Sur macOS, MusicScope
 essaie `1` en premier (webcam USB ou caméra externe), puis `0` (souvent la
 caméra iPhone/Continuity Camera) : l'iPhone se retrouve donc après la webcam.

@@ -49,7 +49,6 @@ from musicscope.recognition.service import RecognitionService
 from musicscope.recognition.workflow import IdentificationResult, IdentificationWorkflow
 from musicscope.renderer import (
     ArtworkRenderer,
-    BackgroundMode,
     CameraBackgroundRenderer,
     CameraSettings,
     ColorSettings,
@@ -307,14 +306,7 @@ class MusicScopeApp:
                         camera_capture = CameraCapture(
                             OpenCvCameraSource(camera_settings.device_index, logger=self._logger)
                         )
-                    if not camera_capture.start():
-                        camera_capture = None
-                        if camera_settings.device_index == 0:
-                            camera_settings.mode = BackgroundMode.CRT
-                            return
-                        self._logger.info("Camera input 1 unavailable; falling back to input 0.")
-                        camera_settings.device_index = 0
-                        select_camera_background(True)
+                    camera_capture.start()
                 elif camera_capture is not None:
                     camera_capture.stop()
 
@@ -666,7 +658,7 @@ class MusicScopeApp:
                 else:
                     crt_renderer.render(state.energy, elapsed)
                 oscilloscope_renderer.render(state, elapsed)
-                if not camera_settings.enabled:
+                if not camera_settings.enabled or camera_settings.show_cover:
                     artwork_renderer.render(state, elapsed)
                 track_info_renderer.render(state)
                 lyrics_renderer.render(state, elapsed)

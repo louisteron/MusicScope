@@ -26,11 +26,9 @@ class CameraCapture:
             return self._frame
 
     def start(self) -> bool:
-        """Begin capture once; return false when no camera is usable."""
+        """Begin capture once without blocking the render or audio threads."""
         if self._thread is not None:
             return True
-        if not self._source.open():
-            return False
         self._stopped.clear()
         self._thread = Thread(target=self._run, name="camera-capture", daemon=True)
         self._thread.start()
@@ -39,14 +37,17 @@ class CameraCapture:
     def stop(self) -> None:
         """Stop capture and release the device."""
         self._stopped.set()
-        if self._thread is not None:
-            self._thread.join(timeout=1.0)
-            self._thread = None
         self._source.close()
+        self._thread = None
         with self._lock:
             self._frame = None
 
     def _run(self) -> None:
+        if self._stopped.is_set() or not self._source.open():
+            return
+        if self._stopped.is_set():
+            self._source.close()
+            return
         while not self._stopped.is_set():
             frame = self._source.read_frame()
             if frame is not None:
