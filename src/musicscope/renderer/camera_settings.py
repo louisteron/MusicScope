@@ -16,7 +16,7 @@ class CameraSettings:
     """Keep camera background selection separate from camera capture."""
 
     mode: BackgroundMode = BackgroundMode.CRT
-    device_index: int = 0
+    device_index: int = 1
 
     @property
     def enabled(self) -> bool:
@@ -30,4 +30,4 @@ class CameraSettings:
 
     def cycle_device(self, direction: int) -> None:
         """Choose one of the camera inputs exposed by the operating system."""
-        self.device_index = (self.device_index + direction) % 8
+        self.device_index = (self.device_index + direction) % 2

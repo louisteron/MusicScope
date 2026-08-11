@@ -22,4 +22,4 @@ def test_camera_background_setting_cycles_camera_inputs() -> None:
 
     settings.cycle_device(-1)
 
-    assert settings.device_index == 7
+    assert settings.device_index == 1

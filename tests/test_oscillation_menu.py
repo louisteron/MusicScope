@@ -41,7 +41,7 @@ def test_menu_selection_wraps() -> None:
 
     menu.move_selection(-1)
 
-    assert menu.lines()[-1].startswith("> CAMERA INPUT  0")
+    assert menu.lines()[-1].startswith("> CAMERA INPUT  1")
 
 
 def test_menu_cycles_the_color_mode() -> None:

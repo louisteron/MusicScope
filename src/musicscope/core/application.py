@@ -308,7 +308,13 @@ class MusicScopeApp:
                             OpenCvCameraSource(camera_settings.device_index, logger=self._logger)
                         )
                     if not camera_capture.start():
-                        camera_settings.mode = BackgroundMode.CRT
+                        camera_capture = None
+                        if camera_settings.device_index == 0:
+                            camera_settings.mode = BackgroundMode.CRT
+                            return
+                        self._logger.info("Camera input 1 unavailable; falling back to input 0.")
+                        camera_settings.device_index = 0
+                        select_camera_background(True)
                 elif camera_capture is not None:
                     camera_capture.stop()
 
