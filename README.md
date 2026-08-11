@@ -94,6 +94,14 @@ oscilloscope.
 notamment avec un CD local.
 Appuie de nouveau sur `M` pour le fermer.
 
+### Fond caméra
+
+Dans le menu `M`, sélectionne `BACKGROUND`, puis choisis `CAMERA`. MusicScope
+demande l'autorisation d'utiliser la webcam et affiche son flux derrière les
+paroles et les oscillations ; la cover centrale est masquée dans ce mode. Sur
+macOS, accepte l'autorisation caméra dans **Réglages Système → Confidentialité
+et sécurité → Caméra** si elle est refusée la première fois.
+
 ### AirPods et casques Bluetooth
 
 Avant de lancer une playlist locale ou un CD, sélectionne les AirPods comme

@@ -57,6 +57,9 @@ if sys.platform == "darwin":
         name="MusicScope.app",
         icon=str(icon_file) if icon_file is not None else None,
         bundle_identifier="io.musicscope.app",
+        info_plist={
+            "NSCameraUsageDescription": "MusicScope uses the camera for its live visual background.",
+        },
     )
 else:
     app = COLLECT(

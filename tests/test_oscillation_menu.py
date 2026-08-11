@@ -5,6 +5,7 @@ from musicscope.audio.output_settings import AudioOutputSettings
 from musicscope.config import RecognitionMode
 from musicscope.core.oscillation_menu import OscillationMenu
 from musicscope.core.recognition_settings import RecognitionSettings
+from musicscope.renderer.camera_settings import CameraSettings
 from musicscope.renderer.color_settings import ColorMode, ColorSettings, PhosphorColor
 from musicscope.renderer.oscillation_settings import OscillationSettings
 from musicscope.renderer.track_info_settings import LyricEntryEffect, TrackInfoSettings
@@ -46,7 +47,7 @@ def test_menu_selection_wraps() -> None:
 def test_menu_cycles_the_color_mode() -> None:
     colors = ColorSettings(mode=ColorMode.NEON_GREEN)
     menu = OscillationMenu(OscillationSettings(), colors)
-    menu.move_selection(-8)
+    menu.move_selection(-9)
 
     menu.adjust_selected(1)
 
@@ -134,7 +135,24 @@ def test_menu_cycles_the_recognition_mode() -> None:
 def test_menu_groups_visual_and_audio_options_into_separate_columns() -> None:
     visual, audio = OscillationMenu(OscillationSettings(), ColorSettings()).columns()
 
-    assert len(visual) == 9
+    assert len(visual) == 10
     assert "AMPLITUDE" in visual[0]
     assert len(audio) == 2
     assert "OUTPUT" in audio[0]
+
+
+def test_menu_changes_the_camera_background() -> None:
+    camera = CameraSettings()
+    selected: list[bool] = []
+    menu = OscillationMenu(
+        OscillationSettings(),
+        ColorSettings(),
+        camera_settings=camera,
+        on_background_change=selected.append,
+    )
+    menu.move_selection(9)
+
+    menu.adjust_selected(1)
+
+    assert camera.enabled
+    assert selected == [True]

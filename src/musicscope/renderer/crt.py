@@ -25,6 +25,7 @@ class CrtRenderer:
         uniform float u_energy;
         uniform float u_time;
         uniform vec3 u_theme_color;
+        uniform bool u_overlay;
         out vec4 fragment_color;
 
         float grid_line(float coordinate, float width) {
@@ -61,7 +62,8 @@ class CrtRenderer:
             float vignette = max(0.24, 1.0 - 0.48 * dot(position, position));
             vec3 base = vec3(0.0004, 0.006, 0.0018);
             vec3 phosphor = u_theme_color * 0.34 * (grid_line_intensity + u_energy * 0.06);
-            fragment_color = vec4(((base + phosphor) * scan + noise * 0.003) * vignette, 1.0);
+            vec3 crt = ((base + phosphor) * scan + noise * 0.003) * vignette;
+            fragment_color = u_overlay ? vec4(phosphor * scan * vignette, 0.42) : vec4(crt, 1.0);
         }
     """
 
@@ -79,9 +81,15 @@ class CrtRenderer:
         vertices = context.buffer(data=positions.tobytes())
         self._vertex_array = context.vertex_array(self._program, [(vertices, "2f", "in_position")])
 
-    def render(self, energy: float, elapsed: float) -> None:
+    def render(self, energy: float, elapsed: float, overlay: bool = False) -> None:
         """Draw the background before all phosphor traces."""
         self._program["u_energy"].value = energy
         self._program["u_time"].value = elapsed
         self._program["u_theme_color"].value = self._color_settings.theme_color
+        self._program["u_overlay"].value = overlay
+        if overlay:
+            self._context.enable(moderngl.BLEND)
+            self._context.blend_func = (moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA)
         self._vertex_array.render(mode=moderngl.TRIANGLE_STRIP)
+        if overlay:
+            self._context.disable(moderngl.BLEND)

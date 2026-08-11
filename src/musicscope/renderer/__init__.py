@@ -2,6 +2,8 @@
 
 from musicscope.renderer.artwork import ArtworkRenderer
 from musicscope.renderer.background import BackgroundRenderer
+from musicscope.renderer.camera_background import CameraBackgroundRenderer
+from musicscope.renderer.camera_settings import BackgroundMode, CameraSettings
 from musicscope.renderer.color_settings import ColorMode, ColorSettings, PhosphorColor
 from musicscope.renderer.crt import CrtRenderer
 from musicscope.renderer.lyrics import LyricsRenderer
@@ -17,6 +19,9 @@ from musicscope.renderer.track_info_settings import LyricEntryEffect, TrackInfoS
 __all__ = [
     "ArtworkRenderer",
     "BackgroundRenderer",
+    "BackgroundMode",
+    "CameraBackgroundRenderer",
+    "CameraSettings",
     "ColorMode",
     "ColorSettings",
     "PhosphorColor",

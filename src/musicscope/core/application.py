@@ -26,6 +26,7 @@ from musicscope.audio import (
     SystemAudioDeviceSelector,
     WindowsLoopbackInput,
 )
+from musicscope.camera import CameraCapture, OpenCvCameraSource
 from musicscope.config import LOGO_NAMES, AppSettings, RecognitionMode
 from musicscope.config.environment import load_project_environment
 from musicscope.core.oscillation_menu import OscillationMenu
@@ -48,6 +49,9 @@ from musicscope.recognition.service import RecognitionService
 from musicscope.recognition.workflow import IdentificationResult, IdentificationWorkflow
 from musicscope.renderer import (
     ArtworkRenderer,
+    BackgroundMode,
+    CameraBackgroundRenderer,
+    CameraSettings,
     ColorSettings,
     CrtRenderer,
     LyricsRenderer,
@@ -101,6 +105,7 @@ class MusicScopeApp:
         local_playback_started_at: float | None = None
         local_position = 0.0
         local_duration = 0.0
+        camera_capture: CameraCapture | None = None
         cd_ejector = CdEjector(device=self._settings.cd_device, logger=self._logger)
         capture_device = None
         try:
@@ -109,6 +114,7 @@ class MusicScopeApp:
             oscillation_settings = OscillationSettings()
             color_settings = ColorSettings()
             track_info_settings = TrackInfoSettings()
+            camera_settings = CameraSettings()
             crt_renderer = CrtRenderer(context, color_settings=color_settings)
             oscilloscope_renderer = OscilloscopeRenderer(
                 context,
@@ -122,6 +128,7 @@ class MusicScopeApp:
                 color_settings=color_settings,
                 track_info_settings=track_info_settings,
             )
+            camera_renderer = CameraBackgroundRenderer(context)
             track_info_renderer = TrackInfoRenderer(
                 context,
                 color_settings=color_settings,
@@ -293,6 +300,16 @@ class MusicScopeApp:
                 )
                 recognition_service.start()
 
+            def select_camera_background(enabled: bool) -> None:
+                nonlocal camera_capture
+                if enabled:
+                    if camera_capture is None:
+                        camera_capture = CameraCapture(OpenCvCameraSource(logger=self._logger))
+                    if not camera_capture.start():
+                        camera_settings.mode = BackgroundMode.CRT
+                elif camera_capture is not None:
+                    camera_capture.stop()
+
             oscillation_menu = OscillationMenu(
                 oscillation_settings,
                 color_settings,
@@ -301,6 +318,8 @@ class MusicScopeApp:
                 on_output_change=select_audio_output,
                 recognition_settings=recognition_settings,
                 on_recognition_change=select_recognition_mode,
+                camera_settings=camera_settings,
+                on_background_change=select_camera_background,
             )
             playlist_menu = PlaylistMenu()
             started_at = time.monotonic()
@@ -620,9 +639,17 @@ class MusicScopeApp:
                 width, height = window.framebuffer_size
                 context.viewport = (0, 0, width, height)
                 elapsed = time.monotonic() - started_at
-                crt_renderer.render(state.energy, elapsed)
+                camera_frame = (
+                    camera_capture.frame if camera_settings.enabled and camera_capture else None
+                )
+                if camera_frame is not None:
+                    camera_renderer.render(camera_frame, (width, height))
+                    crt_renderer.render(state.energy, elapsed, overlay=True)
+                else:
+                    crt_renderer.render(state.energy, elapsed)
                 oscilloscope_renderer.render(state, elapsed)
-                artwork_renderer.render(state, elapsed)
+                if not camera_settings.enabled:
+                    artwork_renderer.render(state, elapsed)
                 track_info_renderer.render(state)
                 lyrics_renderer.render(state, elapsed)
                 is_local_playback = local_player is not None and local_player.is_playing
@@ -659,6 +686,8 @@ class MusicScopeApp:
                 local_player.stop()
             if local_artwork_service is not None:
                 local_artwork_service.cancel()
+            if camera_capture is not None:
+                camera_capture.stop()
             window.close()
 
     def _apply_identification(self, result: IdentificationResult) -> None:

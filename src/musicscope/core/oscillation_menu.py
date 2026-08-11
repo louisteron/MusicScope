@@ -6,6 +6,7 @@ from musicscope.audio.output import AudioOutputDevice
 from musicscope.audio.output_settings import AudioOutputSettings
 from musicscope.config import RecognitionMode
 from musicscope.core.recognition_settings import RecognitionSettings
+from musicscope.renderer.camera_settings import CameraSettings
 from musicscope.renderer.color_settings import ColorSettings
 from musicscope.renderer.oscillation_settings import OscillationSettings
 from musicscope.renderer.track_info_settings import TrackInfoSettings
@@ -24,6 +25,7 @@ class OscillationMenu:
         "Lyrics Wave",
         "Text Wave",
         "Lyric Entry",
+        "Background",
         "Audio Output",
         "Recognition",
     )
@@ -37,6 +39,8 @@ class OscillationMenu:
         on_output_change: Callable[[AudioOutputDevice | None], None] | None = None,
         recognition_settings: RecognitionSettings | None = None,
         on_recognition_change: Callable[[RecognitionMode], None] | None = None,
+        camera_settings: CameraSettings | None = None,
+        on_background_change: Callable[[bool], None] | None = None,
     ) -> None:
         self._settings = settings
         self._color_settings = color_settings
@@ -47,6 +51,8 @@ class OscillationMenu:
             RecognitionMode.OFF
         )
         self._on_recognition_change = on_recognition_change
+        self._camera_settings = camera_settings or CameraSettings()
+        self._on_background_change = on_background_change
         self._visible = False
         self._selected_index = 0
 
@@ -94,6 +100,11 @@ class OscillationMenu:
             if self._on_recognition_change is not None:
                 self._on_recognition_change(self._recognition_settings.mode)
             return
+        if setting == "Background":
+            self._camera_settings.cycle(direction)
+            if self._on_background_change is not None:
+                self._on_background_change(self._camera_settings.enabled)
+            return
         self._settings.adjust(setting, direction)
 
     def lines(self) -> tuple[str, ...]:
@@ -108,6 +119,7 @@ class OscillationMenu:
             f"LYRICS WAVE  {'ON' if self._track_info_settings.lyrics_wave else 'OFF'}",
             f"TEXT WAVE  {'ON' if self._track_info_settings.lyrics_reactive else 'OFF'}",
             f"LYRIC ENTRY  {self._track_info_settings.lyric_entry_effect.value}",
+            f"BACKGROUND  {self._camera_settings.mode.value}",
             f"OUTPUT     {self._output_settings.label}",
             f"RECOG. {self._recognition_settings.label} {self._recognition_settings.status}",
         )
@@ -119,4 +131,4 @@ class OscillationMenu:
     def columns(self) -> tuple[tuple[str, ...], tuple[str, ...]]:
         """Split visual controls from audio and recognition controls for the overlay."""
         lines = self.lines()
-        return lines[:9], lines[9:]
+        return lines[:10], lines[10:]
