@@ -315,8 +315,10 @@ class MusicScopeApp:
                 if not camera_settings.enabled:
                     return
                 if camera_capture is not None:
-                    camera_capture.stop()
-                    camera_capture = None
+                    camera_capture.replace_source(
+                        OpenCvCameraSource(camera_settings.device_index, logger=self._logger)
+                    )
+                    return
                 select_camera_background(True)
 
             oscillation_menu = OscillationMenu(

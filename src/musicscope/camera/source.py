@@ -33,6 +33,8 @@ class OpenCvCameraSource:
         except ImportError:
             self._logger.warning("Camera mode unavailable: OpenCV is not installed.")
             return False
+        if hasattr(cv2, "setNumThreads"):
+            cv2.setNumThreads(1)
         for device_index in self._device_indices():
             for backend, backend_name in self._backends(cv2):
                 capture = self._open_capture(cv2, device_index, backend)
