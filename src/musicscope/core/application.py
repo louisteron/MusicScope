@@ -26,7 +26,7 @@ from musicscope.audio import (
     SystemAudioDeviceSelector,
     WindowsLoopbackInput,
 )
-from musicscope.camera import CameraCapture, OpenCvCameraSource
+from musicscope.camera import CameraCapture, create_camera_source
 from musicscope.config import LOGO_NAMES, AppSettings, RecognitionMode
 from musicscope.config.environment import load_project_environment
 from musicscope.core.oscillation_menu import OscillationMenu
@@ -304,7 +304,7 @@ class MusicScopeApp:
                 if enabled:
                     if camera_capture is None:
                         camera_capture = CameraCapture(
-                            OpenCvCameraSource(camera_settings.device_index, logger=self._logger)
+                            create_camera_source(camera_settings.device_index, logger=self._logger)
                         )
                     camera_capture.start()
                 elif camera_capture is not None:
@@ -316,7 +316,7 @@ class MusicScopeApp:
                     return
                 if camera_capture is not None:
                     camera_capture.replace_source(
-                        OpenCvCameraSource(camera_settings.device_index, logger=self._logger)
+                        create_camera_source(camera_settings.device_index, logger=self._logger)
                     )
                     return
                 select_camera_background(True)

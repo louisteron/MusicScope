@@ -2,7 +2,9 @@
 
 import sys
 
+from musicscope import camera
 from musicscope.camera import source
+from musicscope.camera.isolated_source import IsolatedCameraSource
 from musicscope.camera.source import OpenCvCameraSource
 
 
@@ -64,3 +66,9 @@ def test_camera_falls_back_to_primary_device(monkeypatch) -> None:
     assert camera.open()
     assert cv2.calls[-1] == (0, cv2.CAP_DSHOW)
     assert all(capture.released for capture in cv2.captures[:-1])
+
+
+def test_macos_uses_an_isolated_camera_process(monkeypatch) -> None:
+    monkeypatch.setattr(camera.sys, "platform", "darwin")
+
+    assert isinstance(camera.create_camera_source(1), IsolatedCameraSource)
