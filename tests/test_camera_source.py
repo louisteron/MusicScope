@@ -72,3 +72,35 @@ def test_macos_uses_an_isolated_camera_process(monkeypatch) -> None:
     monkeypatch.setattr(camera.sys, "platform", "darwin")
 
     assert isinstance(camera.create_camera_source(1), IsolatedCameraSource)
+
+
+def test_isolated_camera_close_is_idempotent() -> None:
+    class Process:
+        def __init__(self) -> None:
+            self.terminated = 0
+
+        def is_alive(self) -> bool:
+            return self.terminated == 0
+
+        def terminate(self) -> None:
+            self.terminated += 1
+
+        def join(self, timeout: float) -> None:
+            return None
+
+        def kill(self) -> None:
+            self.terminated += 1
+
+    class Connection:
+        def close(self) -> None:
+            return None
+
+    camera_source = IsolatedCameraSource()
+    process = Process()
+    camera_source._process = process  # noqa: SLF001 - simulate a child camera process.
+    camera_source._connection = Connection()  # noqa: SLF001 - simulate its IPC connection.
+
+    camera_source.close()
+    camera_source.close()
+
+    assert process.terminated == 1

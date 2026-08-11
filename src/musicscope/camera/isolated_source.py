@@ -4,6 +4,7 @@ import logging
 import multiprocessing
 import time
 from io import BytesIO
+from threading import Lock
 
 import numpy as np
 from PIL import Image
@@ -46,6 +47,7 @@ class IsolatedCameraSource:
         self._logger = logger or logging.getLogger("musicscope")
         self._process: multiprocessing.Process | None = None
         self._connection: object | None = None
+        self._lock = Lock()
 
     def open(self) -> bool:
         """Start the isolated capture worker without opening AVFoundation in this process."""
@@ -55,23 +57,27 @@ class IsolatedCameraSource:
         process = context.Process(target=_capture_worker, args=(self._index, sender), daemon=True)
         process.start()
         sender.close()
-        self._process = process
-        self._connection = receiver
+        with self._lock:
+            self._process = process
+            self._connection = receiver
         self._logger.info("Camera background started in isolated mode (camera %s).", self._index)
         return True
 
     def read_frame(self) -> np.ndarray | None:
         """Return the most recent decoded RGB frame, or None if the worker stopped."""
-        if self._connection is None or self._process is None:
+        with self._lock:
+            connection = self._connection
+            process = self._process
+        if connection is None or process is None:
             return None
-        if not self._process.is_alive():
+        if not process.is_alive():
             self._logger.warning("Camera worker stopped; restarting capture safely.")
             self.close()
             return None
         latest: bytes | None = None
         try:
-            while self._connection.poll():
-                latest = self._connection.recv_bytes()
+            while connection.poll():
+                latest = connection.recv_bytes()
         except (EOFError, OSError):
             self.close()
             return None
@@ -82,13 +88,15 @@ class IsolatedCameraSource:
 
     def close(self) -> None:
         """Terminate only the disposable worker process and release IPC handles."""
-        if self._connection is not None:
-            self._connection.close()
+        with self._lock:
+            connection = self._connection
+            process = self._process
             self._connection = None
-        if self._process is not None:
-            if self._process.is_alive():
-                self._process.terminate()
-                self._process.join(timeout=0.20)
-                if self._process.is_alive():
-                    self._process.kill()
             self._process = None
+        if connection is not None:
+            connection.close()
+        if process is not None and process.is_alive():
+            process.terminate()
+            process.join(timeout=0.20)
+            if process.is_alive():
+                process.kill()
