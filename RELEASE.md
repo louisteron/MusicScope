@@ -1,6 +1,6 @@
-# MusicScope V0.1 alpha release checklist
+# MusicScope V1 release checklist
 
-V0.1 alpha is intended for early testers. Local playlist playback is supported
+V1 is the first public release. Local playlist playback is supported
 on macOS and Linux when `mpv` is installed. CD support additionally requires a
 working optical drive and `libdiscid`.
 
@@ -16,8 +16,9 @@ Before publishing a tag:
 
 ## Artifacts
 
-Pushing a tag such as `v0.1.0-alpha.1` launches the Release workflow. It builds
-one native ZIP archive per operating system and publishes a GitHub prerelease:
+Pushing a tag such as `v1.0.0` launches the Release workflow. It builds one
+native ZIP archive per operating system and publishes a normal GitHub release.
+Tags containing a hyphen, such as `v1.1.0-beta.1`, are published as prereleases:
 
 - macOS ARM64: `MusicScope-macos-arm64.zip`
 - Linux x86_64: `MusicScope-linux-x86_64.zip`
