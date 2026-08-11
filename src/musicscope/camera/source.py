@@ -86,14 +86,27 @@ class OpenCvCameraSource:
         """Return a single RGB camera frame, or ``None`` while no frame is available."""
         if self._capture is None or self._cv2 is None:
             return None
-        success, frame = self._capture.read()  # type: ignore[union-attr]
+        try:
+            success, frame = self._capture.read()  # type: ignore[union-attr]
+        except Exception as error:
+            self._logger.warning("Camera frame read failed: %s", type(error).__name__)
+            self.close()
+            return None
         if not success:
             return None
-        return self._cv2.cvtColor(frame, self._cv2.COLOR_BGR2RGB)  # type: ignore[union-attr]
+        try:
+            return self._cv2.cvtColor(frame, self._cv2.COLOR_BGR2RGB)  # type: ignore[union-attr]
+        except Exception as error:
+            self._logger.warning("Camera frame conversion failed: %s", type(error).__name__)
+            self.close()
+            return None
 
     def close(self) -> None:
         """Release the camera device."""
         if self._capture is not None:
-            self._capture.release()  # type: ignore[union-attr]
+            try:
+                self._capture.release()  # type: ignore[union-attr]
+            except Exception as error:
+                self._logger.warning("Camera release failed: %s", type(error).__name__)
             self._capture = None
         self._cv2 = None

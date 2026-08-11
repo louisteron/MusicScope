@@ -71,11 +71,24 @@ class CameraCapture:
                     with self._lock:
                         self._frame = None
                 if not opened:
-                    opened = source.open()
+                    try:
+                        opened = source.open()
+                    except Exception as error:
+                        self._logger.warning(
+                            "Camera source could not open: %s", type(error).__name__
+                        )
+                        opened = False
                     if not opened:
                         self._stopped.wait(0.10)
                         continue
-                frame = source.read_frame()
+                try:
+                    frame = source.read_frame()
+                except Exception as error:
+                    self._logger.warning("Camera source disconnected: %s", type(error).__name__)
+                    source.close()
+                    opened = False
+                    self._stopped.wait(0.10)
+                    continue
                 if frame is not None:
                     missed_frames = 0
                     with self._lock:
@@ -84,6 +97,9 @@ class CameraCapture:
                 missed_frames += 1
                 if missed_frames == 60:
                     self._logger.warning("Camera is open but is not producing frames.")
+                    source.close()
+                    opened = False
+                    missed_frames = 0
                 self._stopped.wait(0.01)
         finally:
             source.close()
