@@ -26,7 +26,7 @@ analysis = Analysis(
         (str(assets_directory), "musicscope/assets"),
         *((str(library), "glfw") for library in glfw_libraries),
     ],
-    hiddenimports=[],
+    hiddenimports=["_struct"],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
