@@ -117,7 +117,7 @@ class SettingsMenuRenderer:
         draw.rounded_rectangle(audio_panel, radius=12, fill=(0, 12, 4, 205))
         draw.rounded_rectangle(visual_panel, radius=12, outline=(45, 255, 125, 210), width=4)
         draw.rounded_rectangle(audio_panel, radius=12, outline=(45, 255, 125, 210), width=4)
-        font = self._font(34)
+        font = self._font(28)
         heading_font = self._font(24)
         draw.text((32, 20), "VISUAL", fill=(75, 255, 145, 255), font=heading_font)
         draw.text((530, 20), "AUDIO", fill=(75, 255, 145, 255), font=heading_font)
@@ -146,7 +146,7 @@ class SettingsMenuRenderer:
     ) -> None:
         for index, line in enumerate(lines):
             color = (100, 255, 155, 255) if line.startswith(">") else (45, 190, 100, 255)
-            draw.text((x, 82 + index * 44), line, fill=color, font=font)
+            draw.text((x, 78 + index * 40), line, fill=color, font=font)
 
     @staticmethod
     def _font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:

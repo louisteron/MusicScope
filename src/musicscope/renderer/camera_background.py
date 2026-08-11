@@ -43,6 +43,7 @@ class CameraBackgroundRenderer:
         )
         self._texture: moderngl.Texture | None = None
         self._size: tuple[int, int] | None = None
+        self._frame_identity: int | None = None
 
     def render(self, frame: np.ndarray, viewport: tuple[int, int]) -> None:
         """Render a camera frame with a cover fit, preserving its proportions."""
@@ -52,7 +53,10 @@ class CameraBackgroundRenderer:
             self._texture = self._context.texture(size, components=3)
             self._texture.filter = (moderngl.LINEAR, moderngl.LINEAR)
             self._size = size
-        self._texture.write(np.ascontiguousarray(frame[::-1]).tobytes())
+            self._frame_identity = None
+        if self._frame_identity != id(frame):
+            self._texture.write(np.ascontiguousarray(frame[::-1]).tobytes())
+            self._frame_identity = id(frame)
         self._texture.use(0)
         self._program["u_camera"].value = 0
         self._program["u_camera_aspect"].value = width / height

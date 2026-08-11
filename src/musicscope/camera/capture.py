@@ -38,6 +38,8 @@ class CameraCapture:
         """Stop capture and release the device."""
         self._stopped.set()
         self._source.close()
+        if self._thread is not None:
+            self._thread.join(timeout=0.05)
         self._thread = None
         with self._lock:
             self._frame = None

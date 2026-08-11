@@ -37,8 +37,9 @@ class OpenCvCameraSource:
             capture.release()
             self._logger.warning("Camera mode unavailable: no camera could be opened.")
             return False
-        capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
+        capture.set(cv2.CAP_PROP_FPS, 30)
         self._cv2 = cv2
         self._capture = capture
         self._logger.info("Camera background started (camera %s).", self._index)
