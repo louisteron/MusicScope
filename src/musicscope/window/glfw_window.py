@@ -1,10 +1,12 @@
 """A narrow GLFW wrapper with no rendering responsibilities."""
 
+import sys
 from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
 
 import glfw
+from PIL import Image
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,6 +56,7 @@ class GlfwWindow:
         if self._window is None:
             glfw.terminate()
             raise RuntimeError("GLFW could not create an OpenGL window.")
+        self._set_taskbar_icon()
         glfw.make_context_current(self._window)
         glfw.swap_interval(1)
         glfw.set_key_callback(self._window, self._key_callback)
@@ -127,6 +130,19 @@ class GlfwWindow:
             glfw.destroy_window(self._window)
             self._window = None
         glfw.terminate()
+
+    def _set_taskbar_icon(self) -> None:
+        """Apply the bundled icon to the active native Windows window."""
+        if sys.platform != "win32" or self._window is None:
+            return
+        icon_path = Path(__file__).resolve().parents[1] / "assets" / "musicscope-logo.png"
+        try:
+            with Image.open(icon_path) as source:
+                icon = source.copy()
+            glfw.set_window_icon(self._window, 1, [icon])
+        except OSError:
+            # The executable icon remains available even if an asset is missing.
+            return
 
     def _on_key(
         self,
