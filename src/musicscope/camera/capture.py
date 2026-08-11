@@ -50,8 +50,15 @@ class CameraCapture:
         if self._stopped.is_set():
             self._source.close()
             return
+        missed_frames = 0
         while not self._stopped.is_set():
             frame = self._source.read_frame()
             if frame is not None:
+                missed_frames = 0
                 with self._lock:
                     self._frame = frame
+                continue
+            missed_frames += 1
+            if missed_frames == 60:
+                self._logger.warning("Camera is open but is not producing frames.")
+            self._stopped.wait(0.01)

@@ -1,6 +1,7 @@
 """Camera source implementations."""
 
 import logging
+import sys
 from typing import Protocol
 
 import numpy as np
@@ -32,18 +33,52 @@ class OpenCvCameraSource:
         except ImportError:
             self._logger.warning("Camera mode unavailable: OpenCV is not installed.")
             return False
-        capture = cv2.VideoCapture(self._index)
-        if not capture.isOpened():
-            capture.release()
-            self._logger.warning("Camera mode unavailable: no camera could be opened.")
-            return False
-        capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
-        capture.set(cv2.CAP_PROP_FPS, 30)
-        self._cv2 = cv2
-        self._capture = capture
-        self._logger.info("Camera background started (camera %s).", self._index)
-        return True
+        for device_index in self._device_indices():
+            for backend, backend_name in self._backends(cv2):
+                capture = self._open_capture(cv2, device_index, backend)
+                if not capture.isOpened():
+                    capture.release()
+                    continue
+                capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
+                capture.set(cv2.CAP_PROP_FPS, 30)
+                capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                self._cv2 = cv2
+                self._capture = capture
+                self._logger.info(
+                    "Camera background started (camera %s, %s).",
+                    device_index,
+                    backend_name,
+                )
+                return True
+        self._logger.warning(
+            "Camera mode unavailable: no camera could be opened (requested camera %s).",
+            self._index,
+        )
+        return False
+
+    def _device_indices(self) -> tuple[int, ...]:
+        """Try the requested device first, then the usual primary webcam."""
+        return (self._index, 0) if self._index else (0,)
+
+    @staticmethod
+    def _backends(cv2: object) -> tuple[tuple[int | None, str], ...]:
+        """Return capture backends ordered for the active operating system."""
+        if sys.platform != "win32":
+            return ((None, "default backend"),)
+        candidates = (
+            (getattr(cv2, "CAP_DSHOW", None), "DirectShow"),
+            (getattr(cv2, "CAP_MSMF", None), "Media Foundation"),
+            (None, "default backend"),
+        )
+        return candidates
+
+    @staticmethod
+    def _open_capture(cv2: object, index: int, backend: int | None) -> object:
+        """Create one capture instance while allowing OpenCV backend fallbacks."""
+        if backend is None:
+            return cv2.VideoCapture(index)  # type: ignore[union-attr]
+        return cv2.VideoCapture(index, backend)  # type: ignore[union-attr]
 
     def read_frame(self) -> np.ndarray | None:
         """Return a single RGB camera frame, or ``None`` while no frame is available."""
