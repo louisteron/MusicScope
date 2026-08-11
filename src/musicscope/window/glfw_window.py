@@ -33,8 +33,10 @@ class GlfwWindow:
         self._title = title
         self._width = width
         self._height = height
-        self._fullscreen = fullscreen
+        self._start_fullscreen = fullscreen
+        self._fullscreen = False
         self._window: glfw._GLFWwindow | None = None
+        self._windowed_bounds: tuple[int, int, int, int] | None = None
         self._pressed_keys: deque[KeyPress] = deque()
         self._mouse_presses: deque[tuple[float, float]] = deque()
         self._mouse_button_events: deque[MouseButtonEvent] = deque()
@@ -42,17 +44,18 @@ class GlfwWindow:
         self._key_callback = self._on_key
         self._mouse_callback = self._on_mouse_button
         self._drop_callback = self._on_drop
+        self._maximize_callback = self._on_maximize
 
     def open(self) -> None:
         """Initialize GLFW and create the native window."""
+        self._set_windows_app_id()
         if not glfw.init():
             raise RuntimeError("GLFW initialization failed.")
         glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 3)
         glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
         glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
         glfw.window_hint(glfw.SAMPLES, 4)
-        monitor = glfw.get_primary_monitor() if self._fullscreen else None
-        self._window = glfw.create_window(self._width, self._height, self._title, monitor, None)
+        self._window = glfw.create_window(self._width, self._height, self._title, None, None)
         if self._window is None:
             glfw.terminate()
             raise RuntimeError("GLFW could not create an OpenGL window.")
@@ -62,6 +65,43 @@ class GlfwWindow:
         glfw.set_key_callback(self._window, self._key_callback)
         glfw.set_mouse_button_callback(self._window, self._mouse_callback)
         glfw.set_drop_callback(self._window, self._drop_callback)
+        glfw.set_window_maximize_callback(self._window, self._maximize_callback)
+        x, y = glfw.get_window_pos(self._window)
+        width, height = glfw.get_window_size(self._window)
+        self._windowed_bounds = (x, y, width, height)
+        if self._start_fullscreen:
+            self.enter_fullscreen()
+
+    @property
+    def is_fullscreen(self) -> bool:
+        """Whether the window currently occupies its monitor without decorations."""
+        return self._fullscreen
+
+    def enter_fullscreen(self) -> None:
+        """Move the window onto the primary monitor as a true fullscreen window."""
+        if self._window is None or self._fullscreen:
+            return
+        monitor = glfw.get_primary_monitor()
+        if monitor is None:
+            return
+        mode = glfw.get_video_mode(monitor)
+        if mode is None:
+            return
+        if self._windowed_bounds is None:
+            x, y = glfw.get_window_pos(self._window)
+            width, height = glfw.get_window_size(self._window)
+            self._windowed_bounds = (x, y, width, height)
+        width, height = mode.size
+        glfw.set_window_monitor(self._window, monitor, 0, 0, width, height, mode.refresh_rate)
+        self._fullscreen = True
+
+    def exit_fullscreen(self) -> None:
+        """Restore the last windowed size after the user presses Escape."""
+        if self._window is None or not self._fullscreen:
+            return
+        x, y, width, height = self._windowed_bounds or (80, 80, self._width, self._height)
+        glfw.set_window_monitor(self._window, None, x, y, width, height, glfw.DONT_CARE)
+        self._fullscreen = False
 
     @property
     def should_close(self) -> bool:
@@ -143,6 +183,23 @@ class GlfwWindow:
         except OSError:
             # The executable icon remains available even if an asset is missing.
             return
+
+    @staticmethod
+    def _set_windows_app_id() -> None:
+        """Give Windows a stable taskbar identity for the MusicScope executable."""
+        if sys.platform != "win32":
+            return
+        try:
+            import ctypes
+
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("io.musicscope.app")
+        except (AttributeError, OSError):
+            return
+
+    def _on_maximize(self, _window: glfw._GLFWwindow, maximized: bool) -> None:
+        """Turn the Windows maximize button into a borderless fullscreen action."""
+        if sys.platform == "win32" and maximized:
+            self.enter_fullscreen()
 
     def _on_key(
         self,

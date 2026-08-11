@@ -576,7 +576,12 @@ class MusicScopeApp:
                         handle_playlist_mouse(mouse_event)
                 keys = window.consume_pressed_keys()
                 playlist_navigation_keys: list[KeyPress] = []
+                fullscreen_keys: list[KeyPress] = []
                 for press in keys:
+                    if press.key == glfw.KEY_ESCAPE and window.is_fullscreen:
+                        window.exit_fullscreen()
+                        fullscreen_keys.append(press)
+                        self._logger.info("Exited fullscreen mode.")
                     if press.key == glfw.KEY_SPACE:
                         playback_progress_visible = not playback_progress_visible
                         self._logger.info(
@@ -595,7 +600,9 @@ class MusicScopeApp:
                         playlist_menu.scroll(1, local_playlist.size)
                         playlist_navigation_keys.append(press)
                 shortcut_keys = tuple(
-                    press for press in keys if press not in playlist_navigation_keys
+                    press
+                    for press in keys
+                    if press not in playlist_navigation_keys and press not in fullscreen_keys
                 )
                 self._handle_shortcuts(
                     shortcut_keys,
