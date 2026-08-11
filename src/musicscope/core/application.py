@@ -304,11 +304,22 @@ class MusicScopeApp:
                 nonlocal camera_capture
                 if enabled:
                     if camera_capture is None:
-                        camera_capture = CameraCapture(OpenCvCameraSource(logger=self._logger))
+                        camera_capture = CameraCapture(
+                            OpenCvCameraSource(camera_settings.device_index, logger=self._logger)
+                        )
                     if not camera_capture.start():
                         camera_settings.mode = BackgroundMode.CRT
                 elif camera_capture is not None:
                     camera_capture.stop()
+
+            def select_camera_device(_index: int) -> None:
+                nonlocal camera_capture
+                if not camera_settings.enabled:
+                    return
+                if camera_capture is not None:
+                    camera_capture.stop()
+                    camera_capture = None
+                select_camera_background(True)
 
             oscillation_menu = OscillationMenu(
                 oscillation_settings,
@@ -320,6 +331,7 @@ class MusicScopeApp:
                 on_recognition_change=select_recognition_mode,
                 camera_settings=camera_settings,
                 on_background_change=select_camera_background,
+                on_camera_device_change=select_camera_device,
             )
             playlist_menu = PlaylistMenu()
             started_at = time.monotonic()

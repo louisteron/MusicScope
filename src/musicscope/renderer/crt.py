@@ -72,6 +72,7 @@ class CrtRenderer:
         context: moderngl.Context,
         color_settings: ColorSettings | None = None,
     ) -> None:
+        self._context = context
         self._color_settings = color_settings or ColorSettings()
         self._program = context.program(
             vertex_shader=self._VERTEX_SHADER,

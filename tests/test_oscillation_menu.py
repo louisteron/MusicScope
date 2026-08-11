@@ -41,13 +41,13 @@ def test_menu_selection_wraps() -> None:
 
     menu.move_selection(-1)
 
-    assert menu.lines()[-1].startswith("> RECOG. OFF IDLE")
+    assert menu.lines()[-1].startswith("> CAMERA INPUT  0")
 
 
 def test_menu_cycles_the_color_mode() -> None:
     colors = ColorSettings(mode=ColorMode.NEON_GREEN)
     menu = OscillationMenu(OscillationSettings(), colors)
-    menu.move_selection(-9)
+    menu.move_selection(-10)
 
     menu.adjust_selected(1)
 
@@ -107,7 +107,7 @@ def test_menu_selects_an_audio_output() -> None:
         output_settings=output,
         on_output_change=selected.append,
     )
-    menu.move_selection(-2)
+    menu.move_selection(-3)
 
     menu.adjust_selected(1)
 
@@ -124,7 +124,7 @@ def test_menu_cycles_the_recognition_mode() -> None:
         recognition_settings=recognition,
         on_recognition_change=selected.append,
     )
-    menu.move_selection(-1)
+    menu.move_selection(-2)
 
     menu.adjust_selected(1)
 
@@ -137,7 +137,7 @@ def test_menu_groups_visual_and_audio_options_into_separate_columns() -> None:
 
     assert len(visual) == 10
     assert "AMPLITUDE" in visual[0]
-    assert len(audio) == 2
+    assert len(audio) == 3
     assert "OUTPUT" in audio[0]
 
 

@@ -15,3 +15,11 @@ def test_camera_background_setting_cycles_between_crt_and_camera() -> None:
 
     assert settings.mode is BackgroundMode.CRT
     assert not settings.enabled
+
+
+def test_camera_background_setting_cycles_camera_inputs() -> None:
+    settings = CameraSettings(device_index=0)
+
+    settings.cycle_device(-1)
+
+    assert settings.device_index == 7

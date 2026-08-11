@@ -28,6 +28,7 @@ class OscillationMenu:
         "Background",
         "Audio Output",
         "Recognition",
+        "Camera Input",
     )
 
     def __init__(
@@ -41,6 +42,7 @@ class OscillationMenu:
         on_recognition_change: Callable[[RecognitionMode], None] | None = None,
         camera_settings: CameraSettings | None = None,
         on_background_change: Callable[[bool], None] | None = None,
+        on_camera_device_change: Callable[[int], None] | None = None,
     ) -> None:
         self._settings = settings
         self._color_settings = color_settings
@@ -53,6 +55,7 @@ class OscillationMenu:
         self._on_recognition_change = on_recognition_change
         self._camera_settings = camera_settings or CameraSettings()
         self._on_background_change = on_background_change
+        self._on_camera_device_change = on_camera_device_change
         self._visible = False
         self._selected_index = 0
 
@@ -105,6 +108,11 @@ class OscillationMenu:
             if self._on_background_change is not None:
                 self._on_background_change(self._camera_settings.enabled)
             return
+        if setting == "Camera Input":
+            self._camera_settings.cycle_device(direction)
+            if self._on_camera_device_change is not None:
+                self._on_camera_device_change(self._camera_settings.device_index)
+            return
         self._settings.adjust(setting, direction)
 
     def lines(self) -> tuple[str, ...]:
@@ -122,6 +130,7 @@ class OscillationMenu:
             f"BACKGROUND  {self._camera_settings.mode.value}",
             f"OUTPUT     {self._output_settings.label}",
             f"RECOG. {self._recognition_settings.label} {self._recognition_settings.status}",
+            f"CAMERA INPUT  {self._camera_settings.device_index}",
         )
         return tuple(
             f"{'>' if index == self._selected_index else ' '} {line}"
